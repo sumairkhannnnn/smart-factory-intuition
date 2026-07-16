@@ -17,6 +17,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const navigate = useNavigate();
   const [selectedRole, setSelectedRole] = useState<"Owner" | "Supervisor" | null>(null);
+  const [highlightedRole, setHighlightedRole] = useState<"Owner" | "Supervisor" | null>(null);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -187,7 +188,17 @@ function AuthPage() {
               <button
                 type="button"
                 onClick={() => handleRoleSelect("Owner")}
-                className="group rounded-3xl border border-white/10 bg-white/10 p-8 text-left shadow-lg shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-info/60 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info"
+                onMouseEnter={() => setHighlightedRole("Owner")}
+                onMouseLeave={() => setHighlightedRole(null)}
+                onFocus={() => setHighlightedRole("Owner")}
+                onBlur={() => setHighlightedRole(null)}
+                className={`group rounded-3xl border border-white/10 bg-white/10 p-8 text-left shadow-lg shadow-black/20 transition duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info ${
+                  highlightedRole === "Owner"
+                    ? "-translate-y-2 scale-[1.04] border-info/60 bg-white/15 shadow-info/30"
+                    : highlightedRole === "Supervisor"
+                      ? "scale-[0.97] opacity-45 blur-[1px]"
+                      : "hover:-translate-y-1 hover:scale-[1.02] hover:border-info/60 hover:bg-white/15"
+                }`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-info to-primary text-white">
@@ -204,7 +215,17 @@ function AuthPage() {
               <button
                 type="button"
                 onClick={() => handleRoleSelect("Supervisor")}
-                className="group rounded-3xl border border-white/10 bg-white/10 p-8 text-left shadow-lg shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-primary/60 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                onMouseEnter={() => setHighlightedRole("Supervisor")}
+                onMouseLeave={() => setHighlightedRole(null)}
+                onFocus={() => setHighlightedRole("Supervisor")}
+                onBlur={() => setHighlightedRole(null)}
+                className={`group rounded-3xl border border-white/10 bg-white/10 p-8 text-left shadow-lg shadow-black/20 transition duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                  highlightedRole === "Supervisor"
+                    ? "-translate-y-2 scale-[1.04] border-primary/60 bg-white/15 shadow-primary/30"
+                    : highlightedRole === "Owner"
+                      ? "scale-[0.97] opacity-45 blur-[1px]"
+                      : "hover:-translate-y-1 hover:scale-[1.02] hover:border-primary/60 hover:bg-white/15"
+                }`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-cyan-400 text-white">
