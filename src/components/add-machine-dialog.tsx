@@ -72,7 +72,7 @@ export function AddMachineDialog({ open, onOpenChange }: { open: boolean; onOpen
             <Select value={form.status} onValueChange={(v) => set("status", v as MachineStatus)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="healthy">Healthy</SelectItem>
+                <SelectItem value="healthy">Very Good Condition</SelectItem>
                 <SelectItem value="warning1">Warning</SelectItem>
                 <SelectItem value="critical">Critical</SelectItem>
               </SelectContent>

@@ -10,14 +10,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { machines } from "@/lib/mockData";
+import { useMachines } from "@/lib/store";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/reports")({
   component: ReportsPage,
 });
 
-function downloadCsv() {
+function downloadCsv(machines: ReturnType<typeof useMachines>) {
   const header = [
     "id",
     "name",
@@ -45,7 +45,7 @@ function downloadCsv() {
   toast.success("CSV downloaded");
 }
 
-function downloadPdf() {
+function downloadPdf(machines: ReturnType<typeof useMachines>) {
   const html = `<!doctype html><html><head><title>SmartPredict Report</title>
   <style>body{font-family:system-ui;padding:24px}h1{color:#2563eb}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #ddd;padding:6px 8px;font-size:12px;text-align:left}th{background:#f1f5f9}</style>
   </head><body><h1>SmartPredict AI — Machine Report</h1>
@@ -67,8 +67,9 @@ function downloadPdf() {
 }
 
 function ReportsPage() {
+  const machines = useMachines();
   const totalDowntime = machines.reduce((a, m) => a + (100 - m.healthScore) * 0.4, 0);
-  const monthlyCost = machines.reduce((a, m) => a + (100 - m.healthScore) * 42, 0);
+  const monthlyCost = machines.reduce((a, m) => a + m.maintenanceCost, 0);
   const totalEnergy = machines.reduce((a, m) => a + m.motorCurrent * m.runningHours * 0.001, 0);
 
   return (
@@ -79,10 +80,10 @@ function ReportsPage() {
           <p className="text-sm text-muted-foreground">Performance, downtime, and cost summaries</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={downloadCsv}>
+          <Button variant="outline" onClick={() => downloadCsv(machines)}>
             <Download className="mr-2 h-4 w-4" /> CSV
           </Button>
-          <Button onClick={downloadPdf}>
+          <Button onClick={() => downloadPdf(machines)}>
             <FileText className="mr-2 h-4 w-4" /> PDF
           </Button>
         </div>
@@ -90,7 +91,7 @@ function ReportsPage() {
 
       <div className="grid gap-4 md:grid-cols-4">
         <Stat label="Total Downtime (h)" value={totalDowntime.toFixed(0)} />
-        <Stat label="Monthly Cost ($)" value={monthlyCost.toFixed(0)} />
+        <Stat label="Monthly Cost (₹)" value={`₹${Math.round(monthlyCost).toLocaleString("en-IN")}`} />
         <Stat label="Energy Used (kWh)" value={totalEnergy.toFixed(0)} />
         <Stat label="Failure Events" value={machines.filter((m) => m.status === "critical").length.toString()} />
       </div>
@@ -109,7 +110,7 @@ function ReportsPage() {
                 <TableHead className="text-right">Hours</TableHead>
                 <TableHead className="text-right">Health</TableHead>
                 <TableHead className="text-right">Failure Prob</TableHead>
-                <TableHead className="text-right">Est. Cost ($)</TableHead>
+                <TableHead className="text-right">Est. Cost (₹)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -122,7 +123,7 @@ function ReportsPage() {
                   <TableCell className="text-right tabular-nums">{m.healthScore}%</TableCell>
                   <TableCell className="text-right tabular-nums">{m.failureProbability}%</TableCell>
                   <TableCell className="text-right tabular-nums">
-                    {((100 - m.healthScore) * 42).toFixed(0)}
+                    ₹{Math.round(m.maintenanceCost).toLocaleString("en-IN")}
                   </TableCell>
                 </TableRow>
               ))}

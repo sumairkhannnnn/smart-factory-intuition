@@ -72,12 +72,86 @@ function rand(seed: number) {
   };
 }
 
+function roundConditionValue(value: number, digits = 1) {
+  return Number(value.toFixed(digits));
+}
+
 function statusFromScore(score: number): MachineStatus {
-  if (score >= 90) return "healthy";
+  if (score > 90) return "healthy";
   if (score >= 75) return "good";
   if (score >= 60) return "warning1";
   if (score >= 45) return "warning2";
   return "critical";
+}
+
+function resetMachineAfterMaintenance(machine: Machine): Machine {
+  return {
+    ...machine,
+    status: "good",
+    healthScore: 100,
+    failureProbability: 2,
+    confidence: 98,
+    remainingDays: 90,
+    lastMaintenance: new Date().toISOString().slice(0, 10),
+    temperature: 55,
+    vibration: 1.8,
+    motorCurrent: 8,
+    humidity: 45,
+    power: 10,
+    rpm: 1200,
+    maintenanceCost: machine.maintenanceCost,
+    bugs: machine.bugs.map((b) => ({ ...b, resolved: true })),
+  };
+}
+
+function deriveHealthScore(machine: Machine): number {
+  const elapsedMinutes = Math.max(0, (Date.now() - new Date(machine.lastMaintenance).getTime()) / 60000);
+  const timePenalty = Number(Math.min(22, elapsedMinutes / 720).toFixed(2));
+  const tempValue = roundConditionValue(machine.temperature, 1);
+  const currentValue = roundConditionValue(machine.motorCurrent, 1);
+  const humidityValue = roundConditionValue(machine.humidity, 1);
+  const tempPenalty = Number(Math.max(0, (tempValue - 55) / 6).toFixed(2));
+  const vibrationPenalty = Number(Math.max(0, (machine.vibration - 1.8) / 0.9).toFixed(2));
+  const currentPenalty = Number(Math.max(0, (currentValue - 8) / 4).toFixed(2));
+  const rpmPenalty = Number(Math.max(0, (machine.rpm - 1200) / 300).toFixed(2));
+  const humidityPenalty = Number(Math.max(0, (humidityValue - 45) / 6).toFixed(2));
+  const hoursPenalty = Number(Math.min(15, Math.max(0, machine.runningHours / 1500)).toFixed(2));
+  const score = 100 - timePenalty - tempPenalty - vibrationPenalty - currentPenalty - rpmPenalty - humidityPenalty - hoursPenalty;
+  return Math.max(0, Math.round(score));
+}
+
+function hydrateMachineHealth(machine: Machine): Machine {
+  const healthScore = machine.healthScore === 100 && (machine.status === "healthy" || machine.status === "good")
+    ? 100
+    : deriveHealthScore(machine);
+
+  const nextStatus = statusFromScore(healthScore);
+
+  if (machine.healthScore === 100 && (machine.status === "healthy" || machine.status === "good")) {
+    return {
+      ...machine,
+      healthScore: 100,
+      status: nextStatus,
+      failureProbability: 2,
+      confidence: 98,
+      remainingDays: 90,
+      temperature: machine.temperature || 55,
+      vibration: machine.vibration || 1.8,
+      motorCurrent: machine.motorCurrent || 8,
+      humidity: machine.humidity || 45,
+      power: machine.power || 10,
+      rpm: machine.rpm || 1200,
+    };
+  }
+
+  return {
+    ...machine,
+    healthScore,
+    status: nextStatus,
+    failureProbability: Math.max(2, Math.round((100 - healthScore) * 0.9)),
+    confidence: Math.max(70, Math.round(98 - (100 - healthScore) * 0.25)),
+    remainingDays: Math.max(1, Math.round(healthScore * 1.2 - Math.max(0, (Date.now() - new Date(machine.lastMaintenance).getTime()) / 86400000) * 1.5)),
+  };
 }
 
 function seed(): Machine[] {
@@ -98,13 +172,13 @@ function seed(): Machine[] {
       lastMaintenance: new Date(Date.now() - Math.round(r() * 150) * 86400000).toISOString().slice(0, 10),
       serviceIntervalDays: 90,
       status: statusFromScore(health),
-      temperature: +(55 + r() * 45).toFixed(1),
+      temperature: roundConditionValue(55 + r() * 45, 1),
       vibration: +(1 + r() * 8).toFixed(2),
-      motorCurrent: +(4 + r() * 18).toFixed(2),
+      motorCurrent: roundConditionValue(4 + r() * 18, 1),
       power: +(5 + r() * 40).toFixed(1),
       runningHours: Math.round(500 + r() * 8500),
       rpm: Math.round(600 + r() * 2400),
-      humidity: +(35 + r() * 40).toFixed(1),
+      humidity: roundConditionValue(35 + r() * 40, 1),
       healthScore: health,
       failureProbability: Math.round((100 - health) * 0.9),
       confidence: Math.round(80 + r() * 18),
@@ -131,28 +205,40 @@ export function loadMachines(): Machine[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Machine[];
+      const hydrated = parsed.map(hydrateMachineHealth);
+      localStorage.setItem(KEY, JSON.stringify(hydrated));
+      return hydrated;
+    }
     const s = seed();
-    localStorage.setItem(KEY, JSON.stringify(s));
-    return s;
+    const hydrated = s.map(hydrateMachineHealth);
+    localStorage.setItem(KEY, JSON.stringify(hydrated));
+    return hydrated;
   } catch {
-    return seed();
+    const fallback = seed().map(hydrateMachineHealth);
+    localStorage.setItem(KEY, JSON.stringify(fallback));
+    return fallback;
   }
 }
 
 export function saveMachines(list: Machine[]) {
-  localStorage.setItem(KEY, JSON.stringify(list));
+  const hydrated = list.map(hydrateMachineHealth);
+  localStorage.setItem(KEY, JSON.stringify(hydrated));
   window.dispatchEvent(new Event("sfi:machines"));
 }
 
 export function useMachines() {
   const [list, setList] = useState<Machine[]>([]);
   useEffect(() => {
-    setList(loadMachines());
-    const h = () => setList(loadMachines());
+    const refresh = () => setList(loadMachines());
+    refresh();
+    const h = () => refresh();
+    const interval = window.setInterval(refresh, 5000);
     window.addEventListener("sfi:machines", h);
     window.addEventListener("storage", h);
     return () => {
+      window.clearInterval(interval);
       window.removeEventListener("sfi:machines", h);
       window.removeEventListener("storage", h);
     };
@@ -216,35 +302,35 @@ export function toggleBug(id: string, bugId: string) {
 }
 
 export function performMaintenance(id: string, rec: Omit<MaintenanceRecord, "id" | "date">) {
-  const list = loadMachines().map((m) => {
+  const list = loadMachines();
+  const nextList = list.map((m) => {
     if (m.id !== id) return m;
     const newRec: MaintenanceRecord = {
       id: `h-${Date.now()}`,
       date: new Date().toISOString().slice(0, 10),
       ...rec,
+      cost: rec.cost || 0,
     };
+    const reset = resetMachineAfterMaintenance(m);
     return {
-      ...m,
-      status: "healthy" as MachineStatus,
-      healthScore: 100,
-      failureProbability: 2,
-      confidence: 98,
-      remainingDays: 90,
+      ...reset,
       lastMaintenance: newRec.date,
-      maintenanceCost: m.maintenanceCost + rec.cost,
+      maintenanceCost: m.maintenanceCost + newRec.cost,
       history: [newRec, ...m.history],
-      bugs: m.bugs.map((b) => ({ ...b, resolved: true })),
     };
   });
-  saveMachines(list);
+
+  window.localStorage.setItem(KEY, JSON.stringify(nextList));
+  window.dispatchEvent(new Event("sfi:machines"));
+  window.dispatchEvent(new Event("storage"));
 }
 
 export function statusLabel(s: MachineStatus) {
   return {
-    healthy: "Healthy",
-    good: "Good",
-    warning1: "Warning L1",
-    warning2: "Warning L2",
+    healthy: "Very Good Condition",
+    good: "Good Condition",
+    warning1: "Warning",
+    warning2: "Warning",
     critical: "Critical",
     off: "Power Off",
   }[s];

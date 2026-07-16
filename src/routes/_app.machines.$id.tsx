@@ -15,6 +15,7 @@ import {
   Plus,
   DollarSign,
   Power,
+  Trash2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ import {
   addBug,
   toggleBug,
   criticalExplanation,
+  deleteMachine,
   type MachineStatus,
 } from "@/lib/store";
 import { StatusBadge } from "@/components/status-badge";
@@ -67,6 +69,7 @@ function MachineDetail() {
   const [editOpen, setEditOpen] = useState(false);
   const [maintOpen, setMaintOpen] = useState(false);
   const [bugText, setBugText] = useState("");
+  const navigate = useNavigate();
 
   if (!m) {
     return (
@@ -95,6 +98,13 @@ function MachineDetail() {
     toast.warning(`${m!.name} shut down for safety`);
   }
 
+  function handleDelete() {
+    if (!window.confirm(`Delete ${m.name}?`)) return;
+    deleteMachine(m.id);
+    toast.success(`${m.name} removed`);
+    navigate({ to: "/machines" });
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -114,6 +124,9 @@ function MachineDetail() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setEditOpen(true)}><Edit3 className="h-4 w-4" /> Edit</Button>
+          <Button variant="destructive" onClick={handleDelete}>
+            <Trash2 className="h-4 w-4" /> Delete
+          </Button>
           <Button onClick={() => setMaintOpen(true)} className="bg-gradient-to-r from-success to-info">
             <Wrench className="h-4 w-4" /> Perform Maintenance
           </Button>
@@ -177,12 +190,12 @@ function MachineDetail() {
       )}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-        <Metric icon={Thermometer} label="Temperature" value={`${m.temperature}°C`} />
-        <Metric icon={Activity} label="Vibration" value={`${m.vibration} mm/s`} />
-        <Metric icon={Zap} label="Motor Current" value={`${m.motorCurrent} A`} />
+        <Metric icon={Thermometer} label="Temperature" value={`${Math.round(m.temperature)}°C`} />
+        <Metric icon={Activity} label="Vibration" value={`${Number(m.vibration.toFixed(1))} mm/s`} />
+        <Metric icon={Zap} label="Motor Current" value={`${Number(m.motorCurrent.toFixed(1))} A`} />
         <Metric icon={Gauge} label="Power" value={`${m.power} kW`} />
         <Metric icon={Clock} label="Running Hours" value={m.runningHours.toString()} />
-        <Metric icon={Droplets} label="Humidity" value={`${m.humidity}%`} />
+        <Metric icon={Droplets} label="Humidity" value={`${Math.round(m.humidity)}%`} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -378,10 +391,10 @@ function EditDialog({ open, onOpenChange, machine }: { open: boolean; onOpenChan
             <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as MachineStatus })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="healthy">Healthy</SelectItem>
-                <SelectItem value="good">Good</SelectItem>
-                <SelectItem value="warning1">Warning L1</SelectItem>
-                <SelectItem value="warning2">Warning L2</SelectItem>
+                <SelectItem value="healthy">Very Good Condition</SelectItem>
+                <SelectItem value="good">Good Condition</SelectItem>
+                <SelectItem value="warning1">Warning</SelectItem>
+                <SelectItem value="warning2">Warning</SelectItem>
                 <SelectItem value="critical">Critical</SelectItem>
                 <SelectItem value="off">Power Off</SelectItem>
               </SelectContent>

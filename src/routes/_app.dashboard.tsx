@@ -94,16 +94,15 @@ function KpiCard({
 function Dashboard() {
   const machines = useMachines();
   const [open, setOpen] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const currentUser = getUser();
   const isOwner = currentUser?.role === "owner";
 
-  const formatCurrency = (value: number) => `₹${Math.round(value * 85).toLocaleString("en-IN")}`;
+  const formatCurrency = (value: number) => `₹${Math.round(value).toLocaleString("en-IN")}`;
 
   const s = useMemo(() => {
     return {
       total: machines.length,
-      healthy: machines.filter((m) => m.status === "healthy" || m.status === "good").length,
+      healthy: machines.filter((m) => m.status === "healthy").length,
       warning: machines.filter((m) => m.status === "warning1" || m.status === "warning2").length,
       critical: machines.filter((m) => m.status === "critical").length,
       off: machines.filter((m) => m.status === "off").length,
@@ -133,34 +132,6 @@ function Dashboard() {
       ][i % 6],
     }));
 
-  const expenseHistory = useMemo(() => {
-    const monthMap = new Map<string, Array<{ date: string; machineName: string; cost: number; notes: string }>>();
-
-    machines.forEach((machine) => {
-      machine.history.forEach((entry) => {
-        const month = entry.date.slice(0, 7);
-        const items = monthMap.get(month) ?? [];
-        items.push({
-          date: entry.date,
-          machineName: machine.name,
-          cost: entry.cost,
-          notes: entry.notes,
-        });
-        monthMap.set(month, items);
-      });
-    });
-
-    const months = Array.from(monthMap.keys()).sort().reverse();
-    const activeMonth = months.includes(selectedMonth) ? selectedMonth : months[0] ?? new Date().toISOString().slice(0, 7);
-    const monthEntries = (monthMap.get(activeMonth) ?? []).sort((a, b) => b.date.localeCompare(a.date));
-
-    return {
-      months,
-      activeMonth,
-      monthEntries,
-      monthTotal: monthEntries.reduce((sum, entry) => sum + entry.cost, 0),
-    };
-  }, [machines, selectedMonth]);
 
   const sustainability = useMemo(() => {
     const totalRuntimeHours = machines.reduce((sum, machine) => sum + machine.runningHours, 0);
@@ -294,7 +265,7 @@ function Dashboard() {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         <KpiCard label="Total Machines" value={s.total} icon={Cog} accent="bg-info text-info border-info/40" />
-        <KpiCard label="Healthy" value={s.healthy} icon={CheckCircle2} accent="bg-success text-success border-success/40" />
+        <KpiCard label="Very Good Condition" value={s.healthy} icon={CheckCircle2} accent="bg-success text-success border-success/40" />
         <KpiCard label="Warning" value={s.warning} icon={Activity} accent="bg-warning text-warning border-warning/40" />
         <KpiCard label="Critical" value={s.critical} icon={AlertTriangle} accent="bg-destructive text-destructive border-destructive/40" />
         {isOwner ? (
@@ -362,7 +333,7 @@ function Dashboard() {
                             border: "1px solid var(--color-border)",
                             borderRadius: 8,
                           }}
-                          formatter={(v: number) => `₹${Math.round(v * 85).toLocaleString("en-IN")}`}
+                          formatter={(v: number) => `₹${Math.round(v).toLocaleString("en-IN")}`}
                         />
                       </PieChart>
                     </ResponsiveContainer>
@@ -373,66 +344,6 @@ function Dashboard() {
                   </div>
                 )}
 
-                <div className="rounded-lg border border-border/50 bg-card/40 p-3">
-                  <div className="mb-2 flex items-center justify-between">
-                    <div className="text-sm font-semibold text-foreground">Historical expenses</div>
-                    <div className="text-xs text-muted-foreground">Calendar view</div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {expenseHistory.months.slice(0, 6).map((month) => {
-                      const isActive = month === expenseHistory.activeMonth;
-                      return (
-                        <button
-                          key={month}
-                          type="button"
-                          onClick={() => setSelectedMonth(month)}
-                          className={cn(
-                            "rounded-md border px-2 py-2 text-left text-xs transition",
-                            isActive
-                              ? "border-primary bg-primary/10 text-primary"
-                              : "border-border/50 bg-background/40 text-muted-foreground hover:bg-accent/40",
-                          )}
-                        >
-                          {new Date(`${month}-01`).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="mt-3 rounded-md border border-border/50 bg-background/40 p-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-xs uppercase tracking-wide text-muted-foreground">Selected month</div>
-                        <div className="text-sm font-semibold text-foreground">
-                          {new Date(`${expenseHistory.activeMonth}-01`).toLocaleDateString("en-IN", { month: "long", year: "numeric" })}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xs text-muted-foreground">Total spend</div>
-                        <div className="text-sm font-semibold text-foreground">₹{Math.round(expenseHistory.monthTotal * 85).toLocaleString("en-IN")}</div>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 space-y-2">
-                      {expenseHistory.monthEntries.length ? (
-                        expenseHistory.monthEntries.map((entry) => (
-                          <div key={`${entry.date}-${entry.machineName}`} className="flex items-center justify-between rounded-md border border-border/40 bg-card/50 px-2 py-2 text-sm">
-                            <div>
-                              <div className="font-medium text-foreground">{entry.machineName}</div>
-                              <div className="text-xs text-muted-foreground">{entry.notes}</div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-semibold text-foreground">₹{Math.round(entry.cost * 85).toLocaleString("en-IN")}</div>
-                              <div className="text-xs text-muted-foreground">{entry.date}</div>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-sm text-muted-foreground">No maintenance costs recorded for this month.</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
               </CardContent>
             </Card>
 
