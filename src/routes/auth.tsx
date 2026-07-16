@@ -123,12 +123,21 @@ function AuthPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#050914] p-4 sm:p-6 lg:p-8">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#020617] p-4 sm:p-6 lg:p-8">
       {/* Animated factory background */}
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(59,130,246,0.25),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_70%,rgba(6,182,212,0.2),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.06)_1px,transparent_1px)] bg-[size:56px_56px]" />
+        <img
+          src="https://images.unsplash.com/photo-1581092921461-eab62e97a780?auto=format&fit=crop&w=2400&q=85"
+          alt=""
+          aria-hidden="true"
+          className="h-full w-full object-cover object-center opacity-75 saturate-125"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,6,23,0.93),rgba(2,6,23,0.48),rgba(2,6,23,0.88))]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(99,102,241,0.5),transparent_42%),radial-gradient(circle_at_84%_72%,rgba(6,182,212,0.38),transparent_40%)] mix-blend-screen" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(125,211,252,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(125,211,252,0.1)_1px,transparent_1px)] bg-[size:56px_56px]" />
+        <div className="absolute inset-x-0 bottom-0 h-[42%] bg-[linear-gradient(165deg,transparent_0%,rgba(8,23,45,0.75)_38%,rgba(3,8,18,0.96)_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-1/3 bg-[repeating-linear-gradient(90deg,transparent_0,transparent_68px,rgba(56,189,248,0.1)_69px,transparent_70px)] [mask-image:linear-gradient(to_top,black,transparent)]" />
+        <div className="absolute left-1/2 top-1/2 h-[46rem] w-[46rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-info/10 shadow-[0_0_130px_30px_rgba(14,165,233,0.08)]" />
         {/* Floating orbs */}
         <div className="absolute -left-24 top-1/4 h-72 w-72 animate-pulse rounded-full bg-info/20 blur-3xl" />
         <div className="absolute -right-24 bottom-1/4 h-96 w-96 animate-pulse rounded-full bg-primary/20 blur-3xl" style={{ animationDelay: "1s" }} />
@@ -145,19 +154,20 @@ function AuthPage() {
 
       <div className="relative w-full max-w-5xl">
         {!selectedRole ? (
-          <div className="mx-auto max-w-4xl text-center text-white">
-            <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white/80 backdrop-blur-md">
-              <Factory className="h-4 w-4 text-info" />
-              Smart Factory Insights
+          <div className="mx-auto max-w-4xl text-center text-slate-100">
+            <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-cyan-200/20 bg-slate-950/35 px-4 py-2 text-sm font-medium text-cyan-50 shadow-lg shadow-cyan-950/30 backdrop-blur-md">
+              <Factory className="h-4 w-4 text-cyan-300" />
+              <span>Smart Factory Insights</span>
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(74,222,128,1)]" />
             </div>
-            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+            <h1 className="bg-gradient-to-r from-white via-cyan-100 to-indigo-200 bg-clip-text text-4xl font-bold tracking-tight text-transparent drop-shadow-[0_5px_20px_rgba(56,189,248,0.2)] sm:text-5xl">
               Choose your access level
             </h1>
-            <p className="mx-auto mt-4 max-w-2xl text-base text-white/70 sm:text-lg">
+            <p className="mx-auto mt-4 max-w-2xl text-base font-medium leading-7 text-slate-300 sm:text-lg">
               Select the role that matches your responsibilities to continue into the factory workspace.
             </p>
 
-            <div className="mt-10 grid gap-4 md:grid-cols-2">
+            <div className="mt-10 grid gap-5 md:grid-cols-2">
               <button
                 type="button"
                 onClick={() => handleRoleSelect("Founder")}
@@ -165,7 +175,7 @@ function AuthPage() {
                 onMouseLeave={() => setHighlightedRole(null)}
                 onFocus={() => setHighlightedRole("Founder")}
                 onBlur={() => setHighlightedRole(null)}
-                className={`group rounded-3xl border border-white/10 bg-white/10 p-8 text-left shadow-lg shadow-black/20 transition duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info ${
+                className={`group relative overflow-hidden rounded-3xl border border-info/20 bg-[radial-gradient(circle_at_85%_10%,rgba(14,165,233,0.35),transparent_36%),linear-gradient(135deg,rgba(10,35,66,0.95),rgba(8,15,31,0.8))] p-8 text-left shadow-[0_20px_45px_rgba(0,0,0,0.32)] transition duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info ${
                   highlightedRole === "Founder"
                     ? "-translate-y-2 scale-[1.04] border-info/60 bg-white/15 shadow-info/30"
                     : highlightedRole === "Supervisor"
@@ -173,16 +183,19 @@ function AuthPage() {
                       : "hover:-translate-y-1 hover:scale-[1.02] hover:border-info/60 hover:bg-white/15"
                 }`}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-info to-primary text-white">
+                <div className="absolute -right-10 -top-12 h-44 w-44 rounded-full border border-info/30 bg-info/10 transition duration-500 group-hover:scale-125" />
+                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-info to-transparent opacity-70" />
+                <div className="relative z-10 flex items-start justify-between">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-info to-primary text-white shadow-lg shadow-info/30">
                     <ShieldCheck className="h-6 w-6" />
                   </div>
-                  <span className="text-sm font-medium text-info transition group-hover:translate-x-1">Select →</span>
+                  <span className="rounded-full border border-info/30 bg-info/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-info transition group-hover:translate-x-1">Executive</span>
                 </div>
-                <h2 className="mt-6 text-2xl font-semibold">Founder</h2>
-                <p className="mt-3 text-sm leading-6 text-white/70">
+                <h2 className="relative z-10 mt-8 text-2xl font-semibold">Founder</h2>
+                <p className="relative z-10 mt-3 text-sm leading-6 text-white/70">
                   Oversee operations, approve actions, and monitor the most critical factory signals.
                 </p>
+                <div className="relative z-10 mt-6 flex items-center gap-2 text-xs font-medium text-info/90"><span className="h-2 w-2 rounded-full bg-info shadow-[0_0_12px_rgba(56,189,248,1)]" /> Command center access</div>
               </button>
 
               <button
@@ -192,7 +205,7 @@ function AuthPage() {
                 onMouseLeave={() => setHighlightedRole(null)}
                 onFocus={() => setHighlightedRole("Supervisor")}
                 onBlur={() => setHighlightedRole(null)}
-                className={`group rounded-3xl border border-white/10 bg-white/10 p-8 text-left shadow-lg shadow-black/20 transition duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                className={`group relative overflow-hidden rounded-3xl border border-cyan-300/20 bg-[radial-gradient(circle_at_15%_10%,rgba(6,182,212,0.3),transparent_35%),linear-gradient(135deg,rgba(12,43,57,0.95),rgba(7,17,31,0.82))] p-8 text-left shadow-[0_20px_45px_rgba(0,0,0,0.32)] transition duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                   highlightedRole === "Supervisor"
                     ? "-translate-y-2 scale-[1.04] border-primary/60 bg-white/15 shadow-primary/30"
                     : highlightedRole === "Founder"
@@ -200,16 +213,19 @@ function AuthPage() {
                       : "hover:-translate-y-1 hover:scale-[1.02] hover:border-primary/60 hover:bg-white/15"
                 }`}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-cyan-400 text-white">
+                <div className="absolute -bottom-16 -left-10 h-48 w-48 rounded-full border border-cyan-300/25 bg-cyan-300/10 transition duration-500 group-hover:scale-125" />
+                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-300 to-transparent opacity-70" />
+                <div className="relative z-10 flex items-start justify-between">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-cyan-400 text-white shadow-lg shadow-cyan-400/25">
                     <Activity className="h-6 w-6" />
                   </div>
-                  <span className="text-sm font-medium text-primary transition group-hover:translate-x-1">Select →</span>
+                  <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200 transition group-hover:translate-x-1">Operations</span>
                 </div>
-                <h2 className="mt-6 text-2xl font-semibold">Supervisor</h2>
-                <p className="mt-3 text-sm leading-6 text-white/70">
+                <h2 className="relative z-10 mt-8 text-2xl font-semibold">Supervisor</h2>
+                <p className="relative z-10 mt-3 text-sm leading-6 text-white/70">
                   Coordinate shifts, review machine health, and respond to real-time operational alerts.
                 </p>
+                <div className="relative z-10 mt-6 flex items-center gap-2 text-xs font-medium text-cyan-100/90"><span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_12px_rgba(103,232,249,1)]" /> Live floor access</div>
               </button>
             </div>
           </div>
@@ -226,9 +242,13 @@ function AuthPage() {
 
             <Card className="border-white/10 bg-white/5 text-white shadow-2xl shadow-primary/20 backdrop-blur-2xl">
               <CardHeader>
-                <CardTitle className="text-2xl">Sign in as {selectedRole}</CardTitle>
+                <CardTitle className="text-2xl">
+                  {mode === "signup" ? "Sign up" : "Sign in"} as {selectedRole}
+                </CardTitle>
                 <CardDescription className="text-white/60">
-                  Enter your workspace credentials to continue.
+                  {mode === "signup"
+                    ? "Create your account first. You can register with your email or Google account."
+                    : "Already registered? Sign in with the same email or Google account you used during sign up."}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -256,6 +276,11 @@ function AuthPage() {
                 </div>
 
                 <form className="space-y-4" onSubmit={submit}>
+                  {mode === "login" ? (
+                    <p className="rounded-md border border-info/20 bg-info/10 px-3 py-2 text-sm text-info-foreground">
+                      New here? Select <span className="font-semibold">Sign up</span> first, then register with Google before using Google sign-in.
+                    </p>
+                  ) : null}
                   {mode === "signup" ? (
                     <Field
                       label="Your name"
