@@ -13,6 +13,7 @@ import {
   LogOut,
   Factory,
   Leaf,
+  DollarSign,
 } from "lucide-react";
 import {
   Sidebar,
@@ -36,6 +37,7 @@ const ownerItems = [
   { title: "Alerts", url: "/alerts", icon: Bell },
   { title: "AI Prediction", url: "/predict", icon: Sparkles },
   { title: "Maintenance", url: "/maintenance", icon: CalendarDays },
+  { title: "Finance", url: "/finance", icon: DollarSign },
   { title: "Reports", url: "/reports", icon: FileBarChart },
   { title: "Settings", url: "/settings", icon: SettingsIcon },
 ];

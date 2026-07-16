@@ -18,6 +18,7 @@ import { Route as AppReportsRouteImport } from './routes/_app.reports'
 import { Route as AppPredictRouteImport } from './routes/_app.predict'
 import { Route as AppMaintenanceRouteImport } from './routes/_app.maintenance'
 import { Route as AppMachinesRouteImport } from './routes/_app.machines'
+import { Route as AppFinanceRouteImport } from './routes/_app.finance'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppAssistantRouteImport } from './routes/_app.assistant'
 import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
@@ -68,6 +69,11 @@ const AppMachinesRoute = AppMachinesRouteImport.update({
   path: '/machines',
   getParentRoute: () => AppRoute,
 } as any)
+const AppFinanceRoute = AppFinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AppAnalyticsRoute
   '/assistant': typeof AppAssistantRoute
   '/dashboard': typeof AppDashboardRoute
+  '/finance': typeof AppFinanceRoute
   '/machines': typeof AppMachinesRouteWithChildren
   '/maintenance': typeof AppMaintenanceRoute
   '/predict': typeof AppPredictRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AppAnalyticsRoute
   '/assistant': typeof AppAssistantRoute
   '/dashboard': typeof AppDashboardRoute
+  '/finance': typeof AppFinanceRoute
   '/machines': typeof AppMachinesRouteWithChildren
   '/maintenance': typeof AppMaintenanceRoute
   '/predict': typeof AppPredictRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/_app/analytics': typeof AppAnalyticsRoute
   '/_app/assistant': typeof AppAssistantRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/finance': typeof AppFinanceRoute
   '/_app/machines': typeof AppMachinesRouteWithChildren
   '/_app/maintenance': typeof AppMaintenanceRoute
   '/_app/predict': typeof AppPredictRoute
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/assistant'
     | '/dashboard'
+    | '/finance'
     | '/machines'
     | '/maintenance'
     | '/predict'
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/assistant'
     | '/dashboard'
+    | '/finance'
     | '/machines'
     | '/maintenance'
     | '/predict'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/_app/analytics'
     | '/_app/assistant'
     | '/_app/dashboard'
+    | '/_app/finance'
     | '/_app/machines'
     | '/_app/maintenance'
     | '/_app/predict'
@@ -261,6 +273,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMachinesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/finance': {
+      id: '/_app/finance'
+      path: '/finance'
+      fullPath: '/finance'
+      preLoaderRoute: typeof AppFinanceRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/dashboard': {
       id: '/_app/dashboard'
       path: '/dashboard'
@@ -316,6 +335,7 @@ interface AppRouteChildren {
   AppAnalyticsRoute: typeof AppAnalyticsRoute
   AppAssistantRoute: typeof AppAssistantRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppFinanceRoute: typeof AppFinanceRoute
   AppMachinesRoute: typeof AppMachinesRouteWithChildren
   AppMaintenanceRoute: typeof AppMaintenanceRoute
   AppPredictRoute: typeof AppPredictRoute
@@ -329,6 +349,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAnalyticsRoute: AppAnalyticsRoute,
   AppAssistantRoute: AppAssistantRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppFinanceRoute: AppFinanceRoute,
   AppMachinesRoute: AppMachinesRouteWithChildren,
   AppMaintenanceRoute: AppMaintenanceRoute,
   AppPredictRoute: AppPredictRoute,
