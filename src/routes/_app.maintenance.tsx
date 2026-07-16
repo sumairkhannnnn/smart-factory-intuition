@@ -46,6 +46,7 @@ function MaintenancePage() {
     technician: "",
     task: "",
     date: new Date().toISOString().slice(0, 10),
+    cost: "",
   });
 
   useEffect(() => {
@@ -66,6 +67,8 @@ function MaintenancePage() {
       toast.error("Select a machine first");
       return;
     }
+    const parsedCost = Number(form.cost);
+    const normalizedCost = Number.isFinite(parsedCost) ? Math.max(0, parsedCost) : 0;
     const ev: MaintenanceEvent = {
       id: `MT-${events.length + 100}`,
       machineId: machine.id,
@@ -74,6 +77,7 @@ function MaintenancePage() {
       task: form.task || "General inspection",
       date: form.date,
       status: "scheduled",
+      cost: normalizedCost,
     };
     setEvents((prev) => [ev, ...prev]);
     toast.success("Maintenance scheduled");
@@ -88,7 +92,7 @@ function MaintenancePage() {
         performMaintenance(machine.id, {
           engineer: event.technician,
           notes: event.task,
-          cost: 0,
+          cost: event.cost ?? 0,
           parts: "Routine service",
           timeTaken: "2h",
         });
@@ -164,6 +168,17 @@ function MaintenancePage() {
               <div className="space-y-1.5">
                 <Label>Task</Label>
                 <Input value={form.task} onChange={(e) => setForm({ ...form, task: e.target.value })} placeholder="Bearing replacement" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Estimated price (₹)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="100"
+                  value={form.cost}
+                  onChange={(e) => setForm({ ...form, cost: e.target.value })}
+                  placeholder="2500"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Date</Label>

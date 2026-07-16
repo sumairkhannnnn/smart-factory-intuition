@@ -29,7 +29,9 @@ export function AppTopbar() {
       syncUser();
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   function toggleTheme() {
@@ -147,7 +149,7 @@ export function AppTopbar() {
             {(user?.name || "U").slice(0, 1).toUpperCase()}
           </div>
           <div className="hidden text-xs leading-tight sm:block">
-            <div className="font-medium">{user?.name || "Guest"}</div>
+            <div className="font-medium">Hello, {user?.name || "Guest"}</div>
             <Badge variant="secondary" className="h-4 px-1 text-[10px] capitalize">
               {user?.role || "user"}
             </Badge>

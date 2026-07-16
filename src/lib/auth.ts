@@ -74,12 +74,12 @@ if (typeof window !== "undefined") {
   void setPersistence(auth, browserLocalPersistence);
 }
 
-function mapFirebaseUser(firebaseUser: FirebaseUser | null, role: User["role"] = "owner"): User | null {
+function mapFirebaseUser(firebaseUser: FirebaseUser | null, role: User["role"] = "owner", fallbackName?: string): User | null {
   if (!firebaseUser) return null;
 
   return {
     email: firebaseUser.email ?? "",
-    name: firebaseUser.displayName ?? firebaseUser.email?.split("@")[0] ?? "User",
+    name: fallbackName?.trim() || firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "User",
     role,
   };
 }
@@ -185,7 +185,7 @@ function getFriendlyAuthError(error: unknown): Error {
   return new Error(`Authentication failed. ${message}`);
 }
 
-export async function signInWithEmail(email: string, password: string, role: User["role"] = "owner") {
+export async function signInWithEmail(email: string, password: string, role: User["role"] = "owner", displayName?: string) {
   if (typeof window === "undefined") throw new Error("Window is not available");
 
   const normalizedRole = role === "supervisor" ? "supervisor" : "owner";
@@ -193,11 +193,12 @@ export async function signInWithEmail(email: string, password: string, role: Use
   const normalizedInput = email.trim().toLowerCase();
   const aliases = [demoAccount.email, normalizedRole, `${normalizedRole}@smartfactory.local`, `${normalizedRole}@example.com`];
 
+  const requestedName = displayName?.trim() || demoAccount.name;
   const isDemoLogin = password === demoAccount.password && aliases.includes(normalizedInput);
   if (isDemoLogin) {
     const user = {
       email: demoAccount.email,
-      name: demoAccount.name,
+      name: requestedName,
       role: normalizedRole,
     } satisfies User;
 
@@ -207,7 +208,7 @@ export async function signInWithEmail(email: string, password: string, role: Use
 
   try {
     const result = await signInWithEmailAndPassword(auth, email, password);
-    const user = mapFirebaseUser(result.user, normalizedRole);
+    const user = mapFirebaseUser(result.user, normalizedRole, requestedName);
 
     if (!user) throw new Error("No user information returned");
 
@@ -237,12 +238,12 @@ export async function signUpWithEmail(email: string, password: string, name: str
   }
 }
 
-export async function signInWithGoogle(role: User["role"] = "owner") {
+export async function signInWithGoogle(role: User["role"] = "owner", displayName?: string) {
   if (typeof window === "undefined") return null;
 
   try {
     const result = await signInWithPopup(auth, googleProvider);
-    const user = mapFirebaseUser(result.user, role);
+    const user = mapFirebaseUser(result.user, role, displayName);
 
     if (!user) throw new Error("No user information returned");
 
@@ -264,12 +265,12 @@ export async function signInWithGoogle(role: User["role"] = "owner") {
   }
 }
 
-export async function completeGoogleRedirectSignIn(role: User["role"] = "owner") {
+export async function completeGoogleRedirectSignIn(role: User["role"] = "owner", displayName?: string) {
   if (typeof window === "undefined") return null;
 
   try {
     const result = await getRedirectResult(auth);
-    const user = mapFirebaseUser(result?.user ?? null, role);
+    const user = mapFirebaseUser(result?.user ?? null, role, displayName);
 
     if (user) {
       persistUser(user);
@@ -286,7 +287,8 @@ export function observeAuthState(callback: (user: User | null) => void) {
   if (typeof window === "undefined") return () => undefined;
   return onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
     const storedUser = getUser();
-    const user = mapFirebaseUser(firebaseUser, storedUser?.role ?? "owner");
+    const fallbackName = storedUser?.name || firebaseUser?.displayName || firebaseUser?.email?.split("@")[0] || "User";
+    const user = mapFirebaseUser(firebaseUser, storedUser?.role ?? "owner", fallbackName);
     persistUser(user);
     callback(user);
   });

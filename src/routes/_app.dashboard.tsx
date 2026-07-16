@@ -196,6 +196,9 @@ function Dashboard() {
     return { averageHealth, recommendations };
   }, [machines, s]);
 
+  const greetingLabel = currentUser?.role === "owner" ? "Owner" : currentUser?.role === "supervisor" ? "Supervisor" : "User";
+  const greetingName = currentUser?.name?.trim() || "Guest";
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -223,44 +226,10 @@ function Dashboard() {
         )}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="border-border/50 bg-gradient-to-br from-card to-card/60 backdrop-blur-md">
-          <CardHeader>
-            <CardTitle>{isOwner ? "Leadership Snapshot" : "Floor Snapshot"}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            {isOwner ? (
-              <>
-                <p>Track uptime, cost exposure, and maintenance urgency from one executive view.</p>
-                <p className="font-medium text-foreground">Focus areas: asset strategy, budget control, and risk prevention.</p>
-              </>
-            ) : (
-              <>
-                <p>Review active alerts, production pressure, and machine attention points for the current shift.</p>
-                <p className="font-medium text-foreground">Focus areas: response speed, team coordination, and downtime reduction.</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/50 bg-gradient-to-br from-card to-card/60 backdrop-blur-md">
-          <CardHeader>
-            <CardTitle>{isOwner ? "Strategic Actions" : "Supervisor Priorities"}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            {isOwner ? (
-              <>
-                <p>Approve critical spend, confirm high-risk maintenance work, and benchmark fleet performance.</p>
-                <p className="font-medium text-foreground">Recommended move: review the most expensive assets and intervention backlog.</p>
-              </>
-            ) : (
-              <>
-                <p>Escalate urgent machine issues, assign follow-up work, and keep the floor operating smoothly.</p>
-                <p className="font-medium text-foreground">Recommended move: address the highest-risk machines first.</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center py-2">
+        <h2 className="text-center text-3xl font-black tracking-tight text-foreground sm:text-4xl">
+          Hello, <span className="bg-gradient-to-r from-primary via-info to-primary bg-clip-text text-transparent">{greetingName}</span>
+        </h2>
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">

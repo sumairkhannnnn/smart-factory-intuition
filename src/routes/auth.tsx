@@ -33,7 +33,10 @@ function AuthPage() {
       }
     });
 
-    void completeGoogleRedirectSignIn(selectedRole === "Owner" ? "owner" : selectedRole === "Supervisor" ? "supervisor" : "owner")
+    void completeGoogleRedirectSignIn(
+      selectedRole === "Owner" ? "owner" : selectedRole === "Supervisor" ? "supervisor" : "owner",
+      displayName.trim(),
+    )
       .then((user) => {
         if (user) {
           toast.success(`Welcome ${user.name}`);
@@ -82,7 +85,15 @@ function AuthPage() {
       return;
     }
 
-    if (mode === "signup" && !displayName.trim()) {
+    const enteredName = displayName.trim();
+    if (!enteredName) {
+      const message = "Please enter your name";
+      setErrorMessage(message);
+      toast.error(message);
+      return;
+    }
+
+    if (mode === "signup" && !enteredName) {
       const message = "Please enter your full name";
       setErrorMessage(message);
       toast.error(message);
@@ -94,8 +105,8 @@ function AuthPage() {
     try {
       const user =
         mode === "signup"
-          ? await signUpWithEmail(username, password, displayName.trim(), role)
-          : await signInWithEmail(username, password, role);
+          ? await signUpWithEmail(username, password, enteredName, role)
+          : await signInWithEmail(username, password, role, enteredName);
 
       setUserRole(role);
       toast.success(mode === "signup" ? `Welcome, ${user.name}` : `Welcome back, ${user.name}`);
@@ -121,7 +132,7 @@ function AuthPage() {
     const role: User["role"] = selectedRole === "Owner" ? "owner" : "supervisor";
 
     try {
-      const user = await signInWithGoogle(role);
+      const user = await signInWithGoogle(role, displayName.trim());
       if (user) {
         setUserRole(role);
         toast.success(`Welcome ${user.name}`);
@@ -251,9 +262,7 @@ function AuthPage() {
                 </div>
 
                 <form className="space-y-4" onSubmit={submit}>
-                  {mode === "signup" ? (
-                    <Field label="Full name" value={displayName} onChange={setDisplayName} autoComplete="name" placeholder="Jane Doe" />
-                  ) : null}
+                  <Field label="Your name" value={displayName} onChange={setDisplayName} autoComplete="name" placeholder="Jane Doe" />
                   <Field label={mode === "signup" ? "Create username" : "Email or username"} value={username} onChange={setUsername} autoComplete="username" placeholder={mode === "signup" ? "janedoe" : "name@company.com or owner/supervisor"} />
                   <Field label="Password" value={password} onChange={setPassword} type="password" autoComplete="current-password" />
                   {errorMessage ? (

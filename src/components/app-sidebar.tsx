@@ -28,6 +28,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { getUser, signOut } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 
 const ownerItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -56,9 +57,11 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const currentUser = getUser();
   const isOwner = currentUser?.role === "owner";
   const items = isOwner ? ownerItems : supervisorItems;
+  const greetingName = currentUser?.name?.trim() || (isOwner ? "Owner" : "Supervisor");
 
   return (
     <Sidebar collapsible="icon">
@@ -70,6 +73,7 @@ export function AppSidebar() {
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-semibold text-sidebar-foreground">Smart Factory</span>
             <span className="text-xs text-sidebar-foreground/60">Insights AI</span>
+            <span className="mt-1 text-[11px] font-medium text-primary">Hello, {greetingName}</span>
           </div>
         </div>
       </SidebarHeader>
@@ -80,10 +84,26 @@ export function AppSidebar() {
             <SidebarMenu>
               {items.map((item) => {
                 const active = path === item.url || path.startsWith(item.url + "/");
+                const isHovered = hoveredItem === item.url;
                 return (
-                  <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
-                      <Link to={item.url}>
+                  <SidebarMenuItem key={item.url} className="transition-all duration-200">
+                    <SidebarMenuButton
+                      asChild
+                      isActive={active}
+                      tooltip={item.title}
+                      onMouseEnter={() => setHoveredItem(item.url)}
+                      onMouseLeave={() => setHoveredItem(null)}
+                      className={cn(
+                        "transition-all duration-200 ease-out",
+                        isHovered && "translate-y-[-2px] scale-[1.03]",
+                        isHovered && !active && "border border-primary/20 bg-accent/80 shadow-lg shadow-primary/15",
+                        isHovered && active && "border border-primary/30 bg-primary/15 shadow-lg shadow-primary/20",
+                        hoveredItem && !isHovered && !active && "opacity-45 brightness-75",
+                        hoveredItem && !isHovered && active && "opacity-60 brightness-90",
+                        active && !isHovered && "bg-primary/10 shadow-sm shadow-primary/10"
+                      )}
+                    >
+                      <Link to={item.url} className="w-full rounded-md">
                         <item.icon />
                         <span>{item.title}</span>
                       </Link>
