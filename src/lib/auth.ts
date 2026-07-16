@@ -2,6 +2,8 @@ import { initializeApp, type FirebaseOptions } from "firebase/app";
 import {
   getAuth,
   GoogleAuthProvider,
+  deleteUser,
+  getAdditionalUserInfo,
   signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
@@ -38,19 +40,6 @@ export interface User {
 }
 
 const KEY = "smartpredict_user";
-
-const DEMO_ACCOUNTS = {
-  owner: {
-    email: "owner@smartfactory.local",
-    password: "Owner123!",
-    name: "Owner Demo",
-  },
-  supervisor: {
-    email: "supervisor@smartfactory.local",
-    password: "Supervisor123!",
-    name: "Supervisor Demo",
-  },
-} as const;
 
 const firebaseConfig: FirebaseOptions = {
   apiKey: "AIzaSyD7FzntMRwXeQPlnGWmerM23Blf_Zq3vYo",
@@ -143,7 +132,9 @@ function getFriendlyAuthError(error: unknown): Error {
   const lower = message.toLowerCase();
 
   if (lower.includes("auth/invalid-credential") || lower.includes("wrong-password")) {
-    return new Error("The email or password you entered is incorrect.");
+    return new Error(
+      "The email or password is incorrect. If you have not registered yet, select Sign up first.",
+    );
   }
 
   if (lower.includes("auth/email-already-in-use")) {
@@ -185,30 +176,18 @@ function getFriendlyAuthError(error: unknown): Error {
   return new Error(`Authentication failed. ${message}`);
 }
 
-export async function signInWithEmail(email: string, password: string, role: User["role"] = "owner", displayName?: string) {
+export async function signInWithEmail(
+  email: string,
+  password: string,
+  role: User["role"] = "owner",
+) {
   if (typeof window === "undefined") throw new Error("Window is not available");
 
   const normalizedRole = role === "supervisor" ? "supervisor" : "owner";
-  const demoAccount = DEMO_ACCOUNTS[normalizedRole];
-  const normalizedInput = email.trim().toLowerCase();
-  const aliases = [demoAccount.email, normalizedRole, `${normalizedRole}@smartfactory.local`, `${normalizedRole}@example.com`];
-
-  const requestedName = displayName?.trim() || demoAccount.name;
-  const isDemoLogin = password === demoAccount.password && aliases.includes(normalizedInput);
-  if (isDemoLogin) {
-    const user = {
-      email: demoAccount.email,
-      name: requestedName,
-      role: normalizedRole,
-    } satisfies User;
-
-    persistUser(user);
-    return user;
-  }
 
   try {
     const result = await signInWithEmailAndPassword(auth, email, password);
-    const user = mapFirebaseUser(result.user, normalizedRole, requestedName);
+    const user = mapFirebaseUser(result.user, normalizedRole);
 
     if (!user) throw new Error("No user information returned");
 
@@ -228,7 +207,7 @@ export async function signUpWithEmail(email: string, password: string, name: str
       await updateProfile(result.user, { displayName: name.trim() });
     }
 
-    const user = mapFirebaseUser(result.user);
+    const user = mapFirebaseUser(result.user, role);
     if (!user) throw new Error("No user information returned");
 
     persistUser(user);
@@ -238,11 +217,27 @@ export async function signUpWithEmail(email: string, password: string, name: str
   }
 }
 
-export async function signInWithGoogle(role: User["role"] = "owner", displayName?: string) {
+export async function signInWithGoogle(
+  mode: "login" | "signup",
+  role: User["role"] = "owner",
+  displayName?: string,
+) {
   if (typeof window === "undefined") return null;
 
   try {
     const result = await signInWithPopup(auth, googleProvider);
+    const isNewUser = getAdditionalUserInfo(result)?.isNewUser === true;
+
+    if (mode === "signup" && !isNewUser) {
+      await firebaseSignOut(auth);
+      throw new Error("This Google account is already registered. Please select Sign in.");
+    }
+
+    if (mode === "login" && isNewUser) {
+      await deleteUser(result.user);
+      throw new Error("No account exists for this Google address. Please select Sign up first.");
+    }
+
     const user = mapFirebaseUser(result.user, role, displayName);
 
     if (!user) throw new Error("No user information returned");
@@ -252,13 +247,8 @@ export async function signInWithGoogle(role: User["role"] = "owner", displayName
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
 
-    if (message.includes("auth/popup-blocked") || message.includes("auth/popup-closed-by-user")) {
-      try {
-        await signInWithRedirect(auth, googleProvider);
-        return null;
-      } catch (redirectError) {
-        throw getFriendlyAuthError(redirectError);
-      }
+    if (message.startsWith("This Google account") || message.startsWith("No account exists")) {
+      throw new Error(message);
     }
 
     throw getFriendlyAuthError(error);

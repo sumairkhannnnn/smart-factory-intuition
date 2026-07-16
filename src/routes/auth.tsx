@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
-import { ArrowLeft, Factory, Cpu, Activity, ShieldCheck, Chrome } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { ArrowLeft, Factory, Activity, ShieldCheck, Chrome } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { completeGoogleRedirectSignIn, observeAuthState, setUserRole, signInWithEmail, signInWithGoogle, signUpWithEmail, type User } from "@/lib/auth";
+import { observeAuthState, setUserRole, signInWithEmail, signInWithGoogle, signUpWithEmail, type User } from "@/lib/auth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
@@ -16,45 +16,30 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [selectedRole, setSelectedRole] = useState<"Owner" | "Supervisor" | null>(null);
-  const [highlightedRole, setHighlightedRole] = useState<"Owner" | "Supervisor" | null>(null);
+  const [selectedRole, setSelectedRole] = useState<"Founder" | "Supervisor" | null>(null);
+  const [highlightedRole, setHighlightedRole] = useState<"Founder" | "Supervisor" | null>(null);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [errorMessage, setErrorMessage] = useState("");
+  const isGoogleAuthenticating = useRef(false);
 
   useEffect(() => {
     document.documentElement.classList.add("dark");
 
     const unsubscribe = observeAuthState((user) => {
+      if (isGoogleAuthenticating.current) return;
       if (user) {
         toast.success(`Welcome ${user.name}`);
         navigate({ to: "/dashboard" });
       }
     });
 
-    void completeGoogleRedirectSignIn(
-      selectedRole === "Owner" ? "owner" : selectedRole === "Supervisor" ? "supervisor" : "owner",
-      displayName.trim(),
-    )
-      .then((user) => {
-        if (user) {
-          toast.success(`Welcome ${user.name}`);
-          navigate({ to: "/dashboard" });
-        }
-      })
-      .catch((error) => {
-        console.error(error);
-        const message = error instanceof Error ? error.message : "Google sign-in failed";
-        setErrorMessage(message);
-        toast.error(message);
-      });
-
     return unsubscribe;
   }, [navigate]);
 
-  function handleRoleSelect(role: "Owner" | "Supervisor") {
+  function handleRoleSelect(role: "Founder" | "Supervisor") {
     setSelectedRole(role);
     setErrorMessage("");
   }
@@ -80,20 +65,13 @@ function AuthPage() {
     }
 
     if (!username || !password) {
-      const message = mode === "signup" ? "Please enter a username and password" : "Please enter your username and password";
+      const message = "Please enter your email address and password";
       setErrorMessage(message);
       toast.error(message);
       return;
     }
 
     const enteredName = displayName.trim();
-    if (!enteredName) {
-      const message = "Please enter your name";
-      setErrorMessage(message);
-      toast.error(message);
-      return;
-    }
-
     if (mode === "signup" && !enteredName) {
       const message = "Please enter your full name";
       setErrorMessage(message);
@@ -101,13 +79,13 @@ function AuthPage() {
       return;
     }
 
-    const role: User["role"] = selectedRole === "Owner" ? "owner" : "supervisor";
+    const role: User["role"] = selectedRole === "Founder" ? "owner" : "supervisor";
 
     try {
       const user =
         mode === "signup"
           ? await signUpWithEmail(username, password, enteredName, role)
-          : await signInWithEmail(username, password, role, enteredName);
+          : await signInWithEmail(username, password, role);
 
       setUserRole(role);
       toast.success(mode === "signup" ? `Welcome, ${user.name}` : `Welcome back, ${user.name}`);
@@ -120,32 +98,27 @@ function AuthPage() {
     }
   }
 
-  async function handleGoogleSignIn() {
+  async function handleGoogleAuth() {
+    if (!selectedRole) return;
+
     setErrorMessage("");
-
-    if (!selectedRole) {
-      const message = "Please choose a role first";
-      setErrorMessage(message);
-      toast.error(message);
-      return;
-    }
-
-    const role: User["role"] = selectedRole === "Owner" ? "owner" : "supervisor";
+    isGoogleAuthenticating.current = true;
+    const role: User["role"] = selectedRole === "Founder" ? "owner" : "supervisor";
 
     try {
-      const user = await signInWithGoogle(role, displayName.trim());
-      if (user) {
-        setUserRole(role);
-        toast.success(`Welcome ${user.name}`);
-        navigate({ to: "/dashboard" });
-      } else {
-        toast.info("Redirecting to Google for sign-in...");
-      }
+      const user = await signInWithGoogle(mode, role, displayName.trim());
+      if (!user) return;
+
+      setUserRole(role);
+      toast.success(mode === "signup" ? `Welcome, ${user.name}` : `Welcome back, ${user.name}`);
+      navigate({ to: "/dashboard" });
     } catch (error) {
       console.error(error);
-      const message = error instanceof Error ? error.message : "Google sign-in failed";
+      const message = error instanceof Error ? error.message : "Google authentication failed";
       setErrorMessage(message);
       toast.error(message);
+    } finally {
+      isGoogleAuthenticating.current = false;
     }
   }
 
@@ -187,13 +160,13 @@ function AuthPage() {
             <div className="mt-10 grid gap-4 md:grid-cols-2">
               <button
                 type="button"
-                onClick={() => handleRoleSelect("Owner")}
-                onMouseEnter={() => setHighlightedRole("Owner")}
+                onClick={() => handleRoleSelect("Founder")}
+                onMouseEnter={() => setHighlightedRole("Founder")}
                 onMouseLeave={() => setHighlightedRole(null)}
-                onFocus={() => setHighlightedRole("Owner")}
+                onFocus={() => setHighlightedRole("Founder")}
                 onBlur={() => setHighlightedRole(null)}
                 className={`group rounded-3xl border border-white/10 bg-white/10 p-8 text-left shadow-lg shadow-black/20 transition duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info ${
-                  highlightedRole === "Owner"
+                  highlightedRole === "Founder"
                     ? "-translate-y-2 scale-[1.04] border-info/60 bg-white/15 shadow-info/30"
                     : highlightedRole === "Supervisor"
                       ? "scale-[0.97] opacity-45 blur-[1px]"
@@ -206,7 +179,7 @@ function AuthPage() {
                   </div>
                   <span className="text-sm font-medium text-info transition group-hover:translate-x-1">Select →</span>
                 </div>
-                <h2 className="mt-6 text-2xl font-semibold">Owner</h2>
+                <h2 className="mt-6 text-2xl font-semibold">Founder</h2>
                 <p className="mt-3 text-sm leading-6 text-white/70">
                   Oversee operations, approve actions, and monitor the most critical factory signals.
                 </p>
@@ -222,7 +195,7 @@ function AuthPage() {
                 className={`group rounded-3xl border border-white/10 bg-white/10 p-8 text-left shadow-lg shadow-black/20 transition duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                   highlightedRole === "Supervisor"
                     ? "-translate-y-2 scale-[1.04] border-primary/60 bg-white/15 shadow-primary/30"
-                    : highlightedRole === "Owner"
+                    : highlightedRole === "Founder"
                       ? "scale-[0.97] opacity-45 blur-[1px]"
                       : "hover:-translate-y-1 hover:scale-[1.02] hover:border-primary/60 hover:bg-white/15"
                 }`}
@@ -283,9 +256,30 @@ function AuthPage() {
                 </div>
 
                 <form className="space-y-4" onSubmit={submit}>
-                  <Field label="Your name" value={displayName} onChange={setDisplayName} autoComplete="name" placeholder="Jane Doe" />
-                  <Field label={mode === "signup" ? "Create username" : "Email or username"} value={username} onChange={setUsername} autoComplete="username" placeholder={mode === "signup" ? "janedoe" : "name@company.com or owner/supervisor"} />
-                  <Field label="Password" value={password} onChange={setPassword} type="password" autoComplete="current-password" />
+                  {mode === "signup" ? (
+                    <Field
+                      label="Your name"
+                      value={displayName}
+                      onChange={setDisplayName}
+                      autoComplete="name"
+                      placeholder="Jane Doe"
+                    />
+                  ) : null}
+                  <Field
+                    label="Email address"
+                    value={username}
+                    onChange={setUsername}
+                    type="email"
+                    autoComplete="email"
+                    placeholder="name@company.com"
+                  />
+                  <Field
+                    label="Password"
+                    value={password}
+                    onChange={setPassword}
+                    type="password"
+                    autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                  />
                   {errorMessage ? (
                     <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                       {errorMessage}
@@ -294,9 +288,14 @@ function AuthPage() {
                   <Button type="submit" className="w-full bg-gradient-to-r from-info to-primary shadow-lg shadow-primary/30">
                     {mode === "signup" ? "Create account" : "Continue"}
                   </Button>
-                  <Button type="button" variant="outline" className="w-full border-white/20 bg-white/10 text-white hover:bg-white/20" onClick={handleGoogleSignIn}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full border-white/20 bg-white/10 text-white hover:bg-white/20"
+                    onClick={handleGoogleAuth}
+                  >
                     <Chrome className="mr-2 h-4 w-4" />
-                    Continue with Google
+                    {mode === "signup" ? "Sign up with Google" : "Sign in with Google"}
                   </Button>
                 </form>
               </CardContent>

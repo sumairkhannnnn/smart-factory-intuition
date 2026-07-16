@@ -196,7 +196,7 @@ function Dashboard() {
     return { averageHealth, recommendations };
   }, [machines, s]);
 
-  const greetingLabel = currentUser?.role === "owner" ? "Owner" : currentUser?.role === "supervisor" ? "Supervisor" : "User";
+  const greetingLabel = currentUser?.role === "owner" ? "Founder" : currentUser?.role === "supervisor" ? "Supervisor" : "User";
   const greetingName = currentUser?.name?.trim() || "Guest";
 
   return (
@@ -319,7 +319,7 @@ function Dashboard() {
             <Card className="border-border/50 bg-gradient-to-br from-card to-card/60 backdrop-blur-md">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Lightbulb className="h-4 w-4 text-primary" /> Owner Guidance
+                  <Lightbulb className="h-4 w-4 text-primary" /> Founder Guidance
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -382,7 +382,7 @@ function Dashboard() {
             </div>
           </div>
           <p className="mt-3 text-sm text-muted-foreground">
-            This overview helps {isOwner ? "owners" : "supervisors"} monitor environmental performance alongside uptime and maintenance activity.
+            This overview helps {isOwner ? "founders" : "supervisors"} monitor environmental performance alongside uptime and maintenance activity.
           </p>
         </CardContent>
       </Card>

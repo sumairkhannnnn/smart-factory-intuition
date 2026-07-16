@@ -62,7 +62,7 @@ function SettingsPage() {
             </div>
             <div className="space-y-1.5">
               <Label>Role</Label>
-              <Input value={user?.role || ""} disabled className="capitalize" />
+              <Input value={user?.role === "owner" ? "Founder" : user?.role || ""} disabled className="capitalize" />
             </div>
             <Button onClick={saveProfile}>Save</Button>
           </CardContent>

@@ -61,7 +61,7 @@ export function AppSidebar() {
   const currentUser = getUser();
   const isOwner = currentUser?.role === "owner";
   const items = isOwner ? ownerItems : supervisorItems;
-  const greetingName = currentUser?.name?.trim() || (isOwner ? "Owner" : "Supervisor");
+  const greetingName = currentUser?.name?.trim() || (isOwner ? "Founder" : "Supervisor");
 
   return (
     <Sidebar collapsible="icon">

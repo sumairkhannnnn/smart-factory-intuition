@@ -41,6 +41,7 @@ export function AppTopbar() {
   }
 
   const critical = alerts.filter((a) => a.severity === "critical").length;
+  const roleLabel = user?.role === "owner" ? "Founder" : user?.role || "User";
 
   const searchResults = useMemo(() => {
     const value = query.trim().toLowerCase();
@@ -151,7 +152,7 @@ export function AppTopbar() {
           <div className="hidden text-xs leading-tight sm:block">
             <div className="font-medium">Hello, {user?.name || "Guest"}</div>
             <Badge variant="secondary" className="h-4 px-1 text-[10px] capitalize">
-              {user?.role || "user"}
+              {roleLabel}
             </Badge>
           </div>
         </div>
