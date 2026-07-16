@@ -41,10 +41,10 @@ function AppLayout() {
     year: "2-digit",
   }).format(currentTime);
 
-  const formattedTime = new Intl.DateTimeFormat("en-GB", {
+  const formattedTime = new Intl.DateTimeFormat("en-US", {
     hour: "2-digit",
     minute: "2-digit",
-    hour12: false,
+    hour12: true,
   }).format(currentTime);
 
   if (!ready) return null;
@@ -66,7 +66,7 @@ function AppLayout() {
                 <div className="text-[11px] font-semibold uppercase tracking-[0.35em] text-primary/80">{formattedDay}</div>
                 <div className="text-lg font-medium text-muted-foreground sm:text-xl">{formattedDate}</div>
               </div>
-              <div className="font-['Inter'] text-4xl font-semibold tracking-[0.24em] text-foreground sm:text-5xl">
+              <div className="font-sans text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
                 {formattedTime}
               </div>
             </div>

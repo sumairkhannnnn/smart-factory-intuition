@@ -35,6 +35,7 @@ export interface Machine {
   manufacturer: string;
   installedOn: string;
   lastMaintenance: string;
+  healthUpdatedAt?: string;
   serviceIntervalDays: number;
   status: MachineStatus;
 
@@ -93,6 +94,7 @@ function resetMachineAfterMaintenance(machine: Machine): Machine {
     confidence: 98,
     remainingDays: 90,
     lastMaintenance: new Date().toISOString().slice(0, 10),
+    healthUpdatedAt: new Date().toISOString(),
     temperature: 55,
     vibration: 1.8,
     motorCurrent: 8,
@@ -105,8 +107,9 @@ function resetMachineAfterMaintenance(machine: Machine): Machine {
 }
 
 function deriveHealthScore(machine: Machine): number {
-  const elapsedMinutes = Math.max(0, (Date.now() - new Date(machine.lastMaintenance).getTime()) / 60000);
-  const timePenalty = Number(Math.min(22, elapsedMinutes / 720).toFixed(2));
+  const healthBaseline = machine.healthUpdatedAt ?? machine.lastMaintenance;
+  const elapsedHours = Math.max(0, (Date.now() - new Date(healthBaseline).getTime()) / 3600000);
+  const timePenalty = Number(Math.min(22, elapsedHours / 12).toFixed(2));
   const tempValue = roundConditionValue(machine.temperature, 1);
   const currentValue = roundConditionValue(machine.motorCurrent, 1);
   const humidityValue = roundConditionValue(machine.humidity, 1);
@@ -121,31 +124,16 @@ function deriveHealthScore(machine: Machine): number {
 }
 
 function hydrateMachineHealth(machine: Machine): Machine {
-  const healthScore = machine.healthScore === 100 && (machine.status === "healthy" || machine.status === "good")
-    ? 100
-    : deriveHealthScore(machine);
+  if (machine.status === "off") return machine;
+
+  const healthUpdatedAt = machine.healthUpdatedAt ?? (machine.healthScore >= 99 ? new Date().toISOString() : machine.lastMaintenance);
+  const healthScore = deriveHealthScore({ ...machine, healthUpdatedAt });
 
   const nextStatus = statusFromScore(healthScore);
 
-  if (machine.healthScore === 100 && (machine.status === "healthy" || machine.status === "good")) {
-    return {
-      ...machine,
-      healthScore: 100,
-      status: nextStatus,
-      failureProbability: 2,
-      confidence: 98,
-      remainingDays: 90,
-      temperature: machine.temperature || 55,
-      vibration: machine.vibration || 1.8,
-      motorCurrent: machine.motorCurrent || 8,
-      humidity: machine.humidity || 45,
-      power: machine.power || 10,
-      rpm: machine.rpm || 1200,
-    };
-  }
-
   return {
     ...machine,
+    healthUpdatedAt,
     healthScore,
     status: nextStatus,
     failureProbability: Math.max(2, Math.round((100 - healthScore) * 0.9)),
@@ -170,6 +158,7 @@ function seed(): Machine[] {
       manufacturer: MANUS[i % MANUS.length],
       installedOn: new Date(Date.now() - Math.round(400 + r() * 1200) * 86400000).toISOString().slice(0, 10),
       lastMaintenance: new Date(Date.now() - Math.round(r() * 150) * 86400000).toISOString().slice(0, 10),
+      healthUpdatedAt: new Date(Date.now() - Math.round(r() * 150) * 86400000).toISOString(),
       serviceIntervalDays: 90,
       status: statusFromScore(health),
       temperature: roundConditionValue(55 + r() * 45, 1),

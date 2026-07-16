@@ -137,7 +137,13 @@ export function AppTopbar() {
         <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
           {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
-        <Button variant="ghost" size="icon" className="relative" aria-label="Alerts">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative"
+          aria-label="Open alerts workspace"
+          onClick={() => navigate({ to: "/alerts" })}
+        >
           <Bell className="h-4 w-4" />
           {critical > 0 && (
             <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium text-destructive-foreground">
