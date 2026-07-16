@@ -34,6 +34,7 @@ import {
   toggleBug,
   criticalExplanation,
   deleteMachine,
+  removeMachineHistoryEntry,
   type MachineStatus,
 } from "@/lib/store";
 import { StatusBadge } from "@/components/status-badge";
@@ -307,9 +308,20 @@ function MachineDetail() {
             {m.history.length === 0 && <p className="text-xs text-muted-foreground">No maintenance yet.</p>}
             {m.history.map((h) => (
               <div key={h.id} className="rounded-md border border-border/60 bg-background/40 p-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <div className="font-medium">{h.notes || "Maintenance"}</div>
-                  <span className="text-xs text-success">${h.cost.toLocaleString()}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-success">₹{h.cost.toLocaleString("en-IN")}</span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      aria-label={`Remove ${m.name} expense`}
+                      onClick={() => removeMachineHistoryEntry(m.id, h.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="mt-1 text-xs text-muted-foreground">
                   {h.date} · {h.engineer} · {h.timeTaken} · Parts: {h.parts || "—"}

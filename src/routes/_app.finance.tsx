@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, DollarSign } from "lucide-react";
+import { Activity, CalendarDays, ChevronLeft, ChevronRight, DollarSign, Sparkles, Trash2, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useMachines } from "@/lib/store";
+import { removeMachineHistoryEntry, useMachines } from "@/lib/store";
 import { getUser } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +21,7 @@ function FinancePage() {
   const formatCurrency = (value: number) => `₹${Math.round(value).toLocaleString("en-IN")}`;
 
   const financeHistory = useMemo(() => {
-    const monthMap = new Map<string, Array<{ date: string; machineName: string; cost: number; notes: string }>>();
+    const monthMap = new Map<string, Array<{ date: string; machineName: string; machineId: string; historyId: string; cost: number; notes: string }>>();
 
     machines.forEach((machine) => {
       machine.history.forEach((entry) => {
@@ -30,6 +30,8 @@ function FinancePage() {
         items.push({
           date: entry.date,
           machineName: machine.name,
+          machineId: machine.id,
+          historyId: entry.id,
           cost: entry.cost,
           notes: entry.notes,
         });
@@ -40,12 +42,31 @@ function FinancePage() {
     const months = Array.from(monthMap.keys()).sort().reverse();
     const activeMonth = months.includes(financeMonth) ? financeMonth : months[0] ?? new Date().toISOString().slice(0, 7);
     const monthEntries = (monthMap.get(activeMonth) ?? []).sort((a, b) => b.date.localeCompare(a.date));
+    const monthTotal = monthEntries.reduce((sum, entry) => sum + entry.cost, 0);
+    const monthAverage = monthEntries.length ? monthTotal / monthEntries.length : 0;
+    const coveredMachines = new Set(monthEntries.map((entry) => entry.machineName)).size;
+    const largestEntry = monthEntries.reduce<{ cost: number; machineName: string; notes: string } | null>((best, entry) => {
+      if (!best || entry.cost > best.cost) {
+        return { cost: entry.cost, machineName: entry.machineName, notes: entry.notes };
+      }
+      return best;
+    }, null);
+
+    const monthIndex = months.indexOf(activeMonth);
+    const previousMonth = monthIndex >= 0 && monthIndex + 1 < months.length ? months[monthIndex + 1] : null;
+    const previousMonthTotal = previousMonth ? (monthMap.get(previousMonth) ?? []).reduce((sum, entry) => sum + entry.cost, 0) : null;
+    const trendValue = previousMonthTotal !== null ? monthTotal - previousMonthTotal : null;
 
     return {
       months,
       activeMonth,
       monthEntries,
-      monthTotal: monthEntries.reduce((sum, entry) => sum + entry.cost, 0),
+      monthTotal,
+      monthAverage,
+      coveredMachines,
+      largestEntry,
+      trendValue,
+      activeMonthLabel: new Date(`${activeMonth}-01`).toLocaleDateString("en-IN", { month: "long", year: "numeric" }),
     };
   }, [machines, financeMonth]);
 
@@ -86,68 +107,126 @@ function FinancePage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Finance Workspace</h1>
-        <p className="text-sm text-muted-foreground">Owner-only maintenance spend tracking and historical cost review</p>
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-card via-background to-primary/5 p-6 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="space-y-3">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+              <Sparkles className="h-3.5 w-3.5" />
+              Owner finance intelligence
+            </div>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight">Finance Workspace</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                A cleaner way to review maintenance spend, spot outliers, and plan future budgets.
+              </p>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-border/50 bg-background/70 px-4 py-3 shadow-sm">
+            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Selected month</div>
+            <div className="mt-1 text-base font-semibold text-foreground">{financeHistory.activeMonthLabel}</div>
+            <div className="text-sm font-medium text-primary">{formatCurrency(financeHistory.monthTotal)}</div>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-3 md:grid-cols-3">
+          <div className="rounded-xl border border-border/50 bg-background/70 p-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <DollarSign className="h-4 w-4 text-primary" /> Total spend
+            </div>
+            <div className="mt-2 text-2xl font-semibold text-foreground">{formatCurrency(financeHistory.monthTotal)}</div>
+          </div>
+          <div className="rounded-xl border border-border/50 bg-background/70 p-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Activity className="h-4 w-4 text-primary" /> Avg. cost per entry
+            </div>
+            <div className="mt-2 text-2xl font-semibold text-foreground">{formatCurrency(financeHistory.monthAverage)}</div>
+          </div>
+          <div className="rounded-xl border border-border/50 bg-background/70 p-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <CalendarDays className="h-4 w-4 text-primary" /> Machines covered
+            </div>
+            <div className="mt-2 text-2xl font-semibold text-foreground">{financeHistory.coveredMachines}</div>
+          </div>
+        </div>
       </div>
 
       <Card className="border-border/50 bg-gradient-to-br from-card to-card/60 backdrop-blur-md">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-primary" /> Finance View
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <TrendingUp className="h-4 w-4 text-primary" /> Monthly spend details
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-xl border border-primary/10 bg-background/60 p-3">
-            <div className="mb-2 flex items-center justify-between gap-2">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <div>
-                <div className="text-sm font-semibold text-foreground">Monthly spend summary</div>
-                <div className="text-xs text-muted-foreground">Review maintenance costs for the selected month</div>
+                <div className="text-sm font-semibold text-foreground">Maintenance activity</div>
+                <div className="text-xs text-muted-foreground">Review the highest-impact spend entries for the selected month.</div>
               </div>
               <div className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary">
-                Owner view
+                {financeHistory.monthEntries.length ? `${financeHistory.monthEntries.length} entries` : "No entries"}
               </div>
             </div>
-            <div className="rounded-lg border border-border/40 bg-card/70 p-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-xs uppercase tracking-wide text-muted-foreground">Selected month</div>
-                  <div className="text-sm font-semibold text-foreground">
-                    {new Date(`${financeHistory.activeMonth}-01`).toLocaleDateString("en-IN", { month: "long", year: "numeric" })}
+
+            {financeHistory.largestEntry ? (
+              <div className="mb-3 rounded-lg border border-border/40 bg-card/70 p-3">
+                <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Largest cost</div>
+                <div className="mt-1 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="font-semibold text-foreground">{financeHistory.largestEntry.machineName}</div>
+                    <div className="text-sm text-muted-foreground">{financeHistory.largestEntry.notes}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-semibold text-foreground">{formatCurrency(financeHistory.largestEntry.cost)}</div>
+                    <div className="text-xs text-muted-foreground">Highest single expense</div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-xs text-muted-foreground">Total spend</div>
-                  <div className="text-sm font-semibold text-primary">{formatCurrency(financeHistory.monthTotal)}</div>
-                </div>
               </div>
-              <div className="mt-3 space-y-2">
-                {financeHistory.monthEntries.length ? (
-                  financeHistory.monthEntries.map((entry) => (
-                    <div key={`${entry.date}-${entry.machineName}`} className="flex items-center justify-between rounded-lg border border-border/40 bg-card/70 px-2 py-2 text-sm">
-                      <div>
-                        <div className="font-medium text-foreground">{entry.machineName}</div>
-                        <div className="text-xs text-muted-foreground">{entry.notes}</div>
-                      </div>
-                      <div className="text-right">
+            ) : null}
+
+            <div className="space-y-2">
+              {financeHistory.monthEntries.length ? (
+                financeHistory.monthEntries.map((entry) => (
+                  <div
+                    key={`${entry.historyId}-${entry.machineName}`}
+                    className="flex flex-col gap-2 rounded-lg border border-border/40 bg-card/70 px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div>
+                      <div className="font-medium text-foreground">{entry.machineName}</div>
+                      <div className="text-xs text-muted-foreground">{entry.notes}</div>
+                    </div>
+                    <div className="flex items-center gap-2 sm:justify-end">
+                      <div className="text-left sm:text-right">
                         <div className="font-semibold text-foreground">{formatCurrency(entry.cost)}</div>
                         <div className="text-xs text-muted-foreground">{entry.date}</div>
                       </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        aria-label={`Remove ${entry.machineName} expense`}
+                        onClick={() => removeMachineHistoryEntry(entry.machineId, entry.historyId)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-sm text-muted-foreground">No maintenance costs recorded for this month.</div>
-                )}
-              </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-lg border border-dashed border-border/50 bg-background/50 p-4 text-sm text-muted-foreground">
+                  No maintenance costs recorded for this month yet.
+                </div>
+              )}
             </div>
           </div>
 
           <div className="rounded-xl border border-primary/10 bg-background/60 p-3">
-            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <div>
                 <div className="text-sm font-semibold text-foreground">Historical expense calendar</div>
-                <div className="text-xs text-muted-foreground">Browse spend for any prior month or year in the owner finance history</div>
+                <div className="text-xs text-muted-foreground">Browse spend across prior months and years with a more structured view.</div>
               </div>
               <div className="flex items-center gap-2">
                 <Button

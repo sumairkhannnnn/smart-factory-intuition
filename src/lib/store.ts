@@ -277,6 +277,23 @@ export function deleteMachine(id: string) {
   saveMachines(loadMachines().filter((m) => m.id !== id));
 }
 
+export function removeMachineHistoryEntry(machineId: string, historyId: string) {
+  const list = loadMachines().map((machine) => {
+    if (machine.id !== machineId) return machine;
+
+    const entryToRemove = machine.history.find((entry) => entry.id === historyId);
+    if (!entryToRemove) return machine;
+
+    return {
+      ...machine,
+      history: machine.history.filter((entry) => entry.id !== historyId),
+      maintenanceCost: Math.max(0, machine.maintenanceCost - entryToRemove.cost),
+    };
+  });
+
+  saveMachines(list);
+}
+
 export function addBug(id: string, title: string) {
   const list = loadMachines().map((m) =>
     m.id === id
