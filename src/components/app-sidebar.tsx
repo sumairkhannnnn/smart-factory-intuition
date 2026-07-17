@@ -49,7 +49,6 @@ const supervisorItems = [
   { title: "Sustainability", url: "/sustainability", icon: Leaf },
   { title: "Alerts", url: "/alerts", icon: Bell },
   { title: "Maintenance", url: "/maintenance", icon: CalendarDays },
-  { title: "AI Assistant", url: "/assistant", icon: Bot },
   { title: "Settings", url: "/settings", icon: SettingsIcon },
 ];
 
@@ -119,6 +118,18 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
+              asChild
+              tooltip="Assistant"
+              className="transition-all duration-200 ease-out hover:-translate-y-1 hover:scale-[1.02] hover:border hover:border-primary/20 hover:bg-accent/80 hover:shadow-lg hover:shadow-primary/10"
+            >
+              <Link to="/assistant" className="w-full rounded-md">
+                <Bot />
+                <span>Assistant</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
               onClick={async () => {
                 if (isSigningOut) return;
                 setIsSigningOut(true);
@@ -127,6 +138,7 @@ export function AppSidebar() {
               }}
               tooltip="Sign out"
               disabled={isSigningOut}
+              className="transition-all duration-200 ease-out hover:-translate-y-1 hover:scale-[1.02] hover:border hover:border-destructive/20 hover:bg-destructive/10 hover:shadow-lg hover:shadow-destructive/10"
             >
               <LogOut />
               <span>Sign out</span>

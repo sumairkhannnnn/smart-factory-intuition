@@ -69,7 +69,7 @@ function downloadPdf(machines: ReturnType<typeof useMachines>) {
 function ReportsPage() {
   const machines = useMachines();
   const totalDowntime = machines.reduce((a, m) => a + (100 - m.healthScore) * 0.4, 0);
-  const monthlyCost = machines.reduce((a, m) => a + m.maintenanceCost, 0);
+  const monthlyTotal = machines.reduce((a, m) => a + m.maintenanceCost, 0);
   const totalEnergy = machines.reduce((a, m) => a + m.motorCurrent * m.runningHours * 0.001, 0);
 
   return (
@@ -77,7 +77,7 @@ function ReportsPage() {
       <div className="flex items-end justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Reports</h1>
-          <p className="text-sm text-muted-foreground">Performance, downtime, and cost summaries</p>
+          <p className="text-sm text-muted-foreground">Performance, downtime, and operational summaries</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => downloadCsv(machines)}>
@@ -91,7 +91,7 @@ function ReportsPage() {
 
       <div className="grid gap-4 md:grid-cols-4">
         <Stat label="Total Downtime (h)" value={totalDowntime.toFixed(0)} />
-        <Stat label="Monthly Cost (₹)" value={`₹${Math.round(monthlyCost).toLocaleString("en-IN")}`} />
+        <Stat label="Monthly Total (₹)" value={`₹${Math.round(monthlyTotal).toLocaleString("en-IN")}`} />
         <Stat label="Energy Used (kWh)" value={totalEnergy.toFixed(0)} />
         <Stat label="Failure Events" value={machines.filter((m) => m.status === "critical").length.toString()} />
       </div>
@@ -110,7 +110,6 @@ function ReportsPage() {
                 <TableHead className="text-right">Hours</TableHead>
                 <TableHead className="text-right">Health</TableHead>
                 <TableHead className="text-right">Failure Prob</TableHead>
-                <TableHead className="text-right">Est. Cost (₹)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -122,9 +121,6 @@ function ReportsPage() {
                   <TableCell className="text-right tabular-nums">{m.runningHours}</TableCell>
                   <TableCell className="text-right tabular-nums">{m.healthScore}%</TableCell>
                   <TableCell className="text-right tabular-nums">{m.failureProbability}%</TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    ₹{Math.round(m.maintenanceCost).toLocaleString("en-IN")}
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
