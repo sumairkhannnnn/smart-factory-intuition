@@ -283,6 +283,16 @@ export function removeMachineHistoryEntry(machineId: string, historyId: string) 
   saveMachines(list);
 }
 
+export function resetMaintenanceExpenses() {
+  const list = loadMachines().map((machine) => ({
+    ...machine,
+    maintenanceCost: 0,
+    history: machine.history.map((entry) => ({ ...entry, cost: 0 })),
+  }));
+
+  saveMachines(list);
+}
+
 export function addBug(id: string, title: string) {
   const list = loadMachines().map((m) =>
     m.id === id

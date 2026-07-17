@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Check, CalendarDays, Clock3, Wrench, ShieldCheck, AlertCircle, Trash2 } from "lucide-react";
+import { Plus, Check, CalendarDays, Clock3, Wrench, ShieldCheck, AlertCircle, Trash2, Pencil } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +41,7 @@ function MaintenancePage() {
     }
   });
   const [open, setOpen] = useState(false);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [form, setForm] = useState({
     machineId: "",
     technician: "",
@@ -61,7 +62,7 @@ function MaintenancePage() {
     }
   }, [fleetMachines, form.machineId]);
 
-  function add() {
+  function saveWorkOrder() {
     const machine = fleetMachines.find((m) => m.id === form.machineId);
     if (!machine) {
       toast.error("Select a machine first");
@@ -69,7 +70,7 @@ function MaintenancePage() {
     }
     const parsedCost = Number(form.cost);
     const normalizedCost = Number.isFinite(parsedCost) ? Math.max(0, parsedCost) : 0;
-    const ev: MaintenanceEvent = {
+    const workOrder: MaintenanceEvent = {
       id: `MT-${events.length + 100}`,
       machineId: machine.id,
       machineName: machine.name,
@@ -79,9 +80,39 @@ function MaintenancePage() {
       status: "scheduled",
       cost: normalizedCost,
     };
-    setEvents((prev) => [ev, ...prev]);
-    toast.success("Maintenance scheduled");
+
+    if (editingEventId) {
+      setEvents((previous) =>
+        previous.map((event) =>
+          event.id === editingEventId ? { ...workOrder, id: event.id, status: event.status } : event,
+        ),
+      );
+      toast.success("Maintenance work order updated");
+    } else {
+      setEvents((previous) => [workOrder, ...previous]);
+      toast.success("Maintenance scheduled");
+    }
+
+    setEditingEventId(null);
     setOpen(false);
+  }
+
+  function editWorkOrder(event: MaintenanceEvent) {
+    const machine = fleetMachines.find((item) => item.id === event.machineId) ?? fleetMachines.find((item) => item.name === event.machineName);
+    if (!machine) {
+      toast.error("This machine is no longer available");
+      return;
+    }
+
+    setEditingEventId(event.id);
+    setForm({
+      machineId: machine.id,
+      technician: event.technician,
+      task: event.task,
+      date: event.date,
+      cost: String(event.cost ?? ""),
+    });
+    setOpen(true);
   }
 
   function complete(id: string) {
@@ -137,13 +168,16 @@ function MaintenancePage() {
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-primary to-info">
+            <Button
+              className="bg-gradient-to-r from-primary to-info"
+              onClick={() => setEditingEventId(null)}
+            >
               <Plus className="mr-2 h-4 w-4" /> Schedule work
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
-              <DialogTitle>Schedule maintenance</DialogTitle>
+            <DialogTitle>{editingEventId ? "Edit maintenance work order" : "Schedule maintenance"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
               <div className="space-y-1.5">
@@ -186,7 +220,7 @@ function MaintenancePage() {
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={add}>Save work order</Button>
+              <Button onClick={saveWorkOrder}>{editingEventId ? "Save changes" : "Save work order"}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -223,6 +257,9 @@ function MaintenancePage() {
                       {e.displayStatus === "in-progress" ? "In progress" : e.displayStatus === "scheduled" ? "Scheduled" : e.displayStatus}
                     </Badge>
                     <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => editWorkOrder(e)}>
+                        <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+                      </Button>
                       <Button size="sm" variant="outline" onClick={() => complete(e.id)}>
                         <Check className="mr-1 h-3.5 w-3.5" /> Complete
                       </Button>

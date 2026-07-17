@@ -14,6 +14,7 @@ import {
   Lightbulb,
   TrendingUp,
   ShieldCheck,
+  RotateCcw,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,13 +29,14 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend,
+  Label as PieLabel,
 } from "recharts";
-import { useMachines, totalExpenses } from "@/lib/store";
+import { resetMaintenanceExpenses, totalExpenses, useMachines } from "@/lib/store";
 import { StatusBadge } from "@/components/status-badge";
 import { AddMachineDialog } from "@/components/add-machine-dialog";
 import { cn } from "@/lib/utils";
 import { getUser } from "@/lib/auth";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/dashboard")({
   component: Dashboard,
@@ -116,21 +118,28 @@ function Dashboard() {
     value: Math.round(70 + Math.sin(i / 3) * 10 + Math.random() * 6),
   }));
 
-  const expensePie = machines
-    .filter((m) => m.maintenanceCost > 0)
-    .slice(0, 6)
-    .map((m, i) => ({
-      name: m.name,
-      value: m.maintenanceCost,
-      color: [
-        "#3b82f6",
-        "#8b5cf6",
-        "#10b981",
-        "#f59e0b",
-        "#ef4444",
-        "#14b8a6",
-      ][i % 6],
+  const expensePie = useMemo(() => {
+    const colors = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4", "#8b5cf6"];
+    const sortedMachines = machines
+      .filter((machine) => machine.maintenanceCost > 0)
+      .sort((first, second) => second.maintenanceCost - first.maintenanceCost);
+    const topMachines = sortedMachines.slice(0, 5).map((machine) => ({
+      name: machine.name,
+      value: machine.maintenanceCost,
     }));
+    const otherMachinesCost = sortedMachines.slice(5).reduce((total, machine) => total + machine.maintenanceCost, 0);
+
+    if (otherMachinesCost > 0) {
+      topMachines.push({ name: "Other machines", value: otherMachinesCost });
+    }
+
+    return topMachines.map((machine, index) => ({
+      ...machine,
+      color: colors[index % colors.length],
+    }));
+  }, [machines]);
+
+  const totalMachineExpense = expensePie.reduce((total, machine) => total + machine.value, 0);
 
 
   const sustainability = useMemo(() => {
@@ -199,6 +208,13 @@ function Dashboard() {
   const greetingLabel = currentUser?.role === "owner" ? "Founder" : currentUser?.role === "supervisor" ? "Supervisor" : "User";
   const greetingName = currentUser?.name?.trim() || "Guest";
 
+  function resetExpenses() {
+    if (!window.confirm("Reset all recorded maintenance expenses? This sets the total and monthly amounts to zero.")) return;
+
+    resetMaintenanceExpenses();
+    toast.success("Maintenance expenses reset to zero");
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -213,12 +229,17 @@ function Dashboard() {
           </p>
         </div>
         {isOwner ? (
-          <Button
-            onClick={() => setOpen(true)}
-            className="bg-gradient-to-r from-primary to-info shadow-lg shadow-primary/25"
-          >
-            <Plus className="h-4 w-4" /> Add Machine
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={resetExpenses} className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive">
+              <RotateCcw className="h-4 w-4" /> Reset expenses
+            </Button>
+            <Button
+              onClick={() => setOpen(true)}
+              className="bg-gradient-to-r from-primary to-info shadow-lg shadow-primary/25"
+            >
+              <Plus className="h-4 w-4" /> Add Machine
+            </Button>
+          </div>
         ) : (
           <Button variant="outline" className="border-primary/30 bg-card/70">
             <Activity className="mr-2 h-4 w-4" /> Team Shift Review
@@ -283,19 +304,42 @@ function Dashboard() {
 
         {isOwner ? (
           <>
-            <Card className="border-border/50 bg-gradient-to-br from-card to-card/60 backdrop-blur-md">
-              <CardHeader>
-                <CardTitle>Expenses by Machine</CardTitle>
+            <Card className="border-border/50 bg-gradient-to-br from-card to-card/60 backdrop-blur-md lg:col-span-2">
+              <CardHeader className="flex flex-row items-start justify-between gap-3">
+                <div>
+                  <CardTitle>Expenses by Machine</CardTitle>
+                  <p className="mt-1 text-sm text-muted-foreground">Maintenance cost distribution across your fleet.</p>
+                </div>
+                <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-right">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Total spend</div>
+                  <div className="text-sm font-bold text-primary">{formatCurrency(totalMachineExpense)}</div>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(13rem,0.8fr)] md:items-center">
                 {expensePie.length ? (
-                  <div className="h-56">
+                  <>
+                  <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie data={expensePie} dataKey="value" nameKey="name" innerRadius={55} outerRadius={90} paddingAngle={3}>
+                        <Pie data={expensePie} dataKey="value" nameKey="name" innerRadius={68} outerRadius={96} paddingAngle={4} stroke="transparent">
                           {expensePie.map((e) => <Cell key={e.name} fill={e.color} />)}
+                          <PieLabel
+                            position="center"
+                            content={({ viewBox }) => {
+                              const center = viewBox as { cx?: number; cy?: number };
+                              return (
+                                <text x={center.cx} y={center.cy} textAnchor="middle" dominantBaseline="central">
+                                  <tspan x={center.cx} dy="-0.4em" className="fill-foreground text-base font-bold">
+                                    {formatCurrency(totalMachineExpense)}
+                                  </tspan>
+                                  <tspan x={center.cx} dy="1.7em" className="fill-muted-foreground text-[10px] font-medium uppercase">
+                                    Total expense
+                                  </tspan>
+                                </text>
+                              );
+                            }}
+                          />
                         </Pie>
-                        <Legend />
                         <Tooltip
                           contentStyle={{
                             background: "var(--color-popover)",
@@ -307,8 +351,22 @@ function Dashboard() {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
+                  <div className="space-y-2.5">
+                    {expensePie.map((machine) => {
+                      const share = totalMachineExpense ? Math.round((machine.value / totalMachineExpense) * 100) : 0;
+                      return (
+                        <div key={machine.name} className="flex items-center gap-2 rounded-lg border border-border/50 bg-background/40 px-3 py-2">
+                          <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: machine.color }} />
+                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{machine.name}</span>
+                          <span className="text-xs font-semibold tabular-nums text-muted-foreground">{share}%</span>
+                          <span className="text-xs font-semibold tabular-nums text-foreground">{formatCurrency(machine.value)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  </>
                 ) : (
-                  <div className="flex h-56 items-center justify-center text-sm text-muted-foreground">
+                  <div className="col-span-full flex h-56 items-center justify-center text-sm text-muted-foreground">
                     No expenses yet
                   </div>
                 )}

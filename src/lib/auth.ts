@@ -36,6 +36,8 @@ export interface User {
   email: string;
   name: string;
   role: "owner" | "supervisor" | "technician";
+  supervisorCount?: number;
+  supervisorNames?: string[];
   machineTypes?: string[];
 }
 
@@ -279,7 +281,14 @@ export function observeAuthState(callback: (user: User | null) => void) {
     const storedUser = getUser();
     const fallbackName = storedUser?.name || firebaseUser?.displayName || firebaseUser?.email?.split("@")[0] || "User";
     const user = mapFirebaseUser(firebaseUser, storedUser?.role ?? "owner", fallbackName);
-    persistUser(user);
-    callback(user);
+    const userWithSettings = user
+      ? {
+          ...user,
+          supervisorCount: storedUser?.supervisorCount,
+          supervisorNames: storedUser?.supervisorNames,
+        }
+      : null;
+    persistUser(userWithSettings);
+    callback(userWithSettings);
   });
 }

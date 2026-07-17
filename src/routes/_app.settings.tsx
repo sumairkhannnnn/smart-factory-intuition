@@ -18,6 +18,7 @@ function SettingsPage() {
   const [factory, setFactory] = useState("Bharat Textiles Pvt Ltd");
   const [technicians, setTechnicians] = useState(["Ravi Kumar", "Amit Shah", "Priya Patel"]);
   const [newTech, setNewTech] = useState("");
+  const [newSupervisor, setNewSupervisor] = useState("");
   const [machineName, setMachineName] = useState("");
   const [thresholds, setThresholds] = useState({ temp: 90, vib: 6, current: 18 });
   const [dark, setDark] = useState(false);
@@ -89,6 +90,57 @@ function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {user?.role === "owner" ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Supervisor Team</CardTitle>
+              <CardDescription>Track the number and names of supervisors in your factory.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="supervisor-count">Number of supervisors</Label>
+                <Input
+                  id="supervisor-count"
+                  type="number"
+                  min="0"
+                  value={user.supervisorCount ?? 0}
+                  onChange={(event) => {
+                    const supervisorCount = Math.max(0, Number.parseInt(event.target.value, 10) || 0);
+                    setUser({ ...user, supervisorCount });
+                  }}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add supervisor"
+                  value={newSupervisor}
+                  onChange={(event) => setNewSupervisor(event.target.value)}
+                />
+                <Button
+                  onClick={() => {
+                    if (newSupervisor.trim()) {
+                      const supervisorNames = [...(user.supervisorNames ?? []), newSupervisor.trim()];
+                      setUser({ ...user, supervisorNames });
+                      setNewSupervisor("");
+                      toast.success("Supervisor added");
+                    }
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+              <div className="space-y-1">
+                {(user.supervisorNames ?? []).map((name) => (
+                  <div key={name} className="rounded-md border px-3 py-2 text-sm">
+                    {name}
+                  </div>
+                ))}
+              </div>
+              <Button onClick={saveProfile}>Save supervisor details</Button>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <Card>
           <CardHeader>
