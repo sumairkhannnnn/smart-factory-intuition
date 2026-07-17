@@ -39,6 +39,12 @@ import {
 } from "@/lib/store";
 import { StatusBadge } from "@/components/status-badge";
 import { toast } from "sonner";
+import {
+  buildRemoteAccessPlan,
+  createRemoteAccessSession,
+  type ConnectivityMode,
+  type ClientPlatform,
+} from "@/lib/remote-access";
 
 export const Route = createFileRoute("/_app/machines/$id")({
   component: MachineDetail,
@@ -70,6 +76,7 @@ function MachineDetail() {
   const [editOpen, setEditOpen] = useState(false);
   const [maintOpen, setMaintOpen] = useState(false);
   const [bugText, setBugText] = useState("");
+  const [activeSession, setActiveSession] = useState<ReturnType<typeof createRemoteAccessSession> | null>(null);
   const navigate = useNavigate();
 
   if (!m) {
@@ -93,6 +100,7 @@ function MachineDetail() {
   const gauge = [{ name: "Health", value: m.healthScore, fill: healthColor(m.healthScore) }];
   const reasons = useMemo(() => criticalExplanation(m), [m]);
   const openBugs = m.bugs.filter((b) => !b.resolved).length;
+  const remoteAccessOptions = useMemo(() => buildRemoteAccessPlan(m), [m]);
 
   function shutdown() {
     updateMachine(m!.id, { status: "off", healthScore: 0 });
@@ -104,6 +112,12 @@ function MachineDetail() {
     deleteMachine(m.id);
     toast.success(`${m.name} removed`);
     navigate({ to: "/machines" });
+  }
+
+  function startRemoteSession(mode: ConnectivityMode, platform: ClientPlatform) {
+    const session = createRemoteAccessSession(m, mode, platform);
+    setActiveSession(session);
+    toast.success(`${platform} remote access started for ${m.name}`);
   }
 
   return (
@@ -253,6 +267,43 @@ function MachineDetail() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-border/50 bg-gradient-to-br from-card to-card/60 backdrop-blur-md">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">Remote access and connectivity</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {activeSession ? (
+            <div className="rounded-lg border border-primary/30 bg-primary/10 p-3 text-sm">
+              <div className="font-semibold">Session active</div>
+              <div className="mt-1 text-muted-foreground">{activeSession.endpoint}</div>
+              <div className="mt-2 text-xs text-muted-foreground">{activeSession.instructions.join(" ")}</div>
+            </div>
+          ) : null}
+          <div className="grid gap-3 md:grid-cols-3">
+            {remoteAccessOptions.map((option) => (
+              <div key={option.id} className="rounded-lg border border-border/60 bg-background/60 p-3 text-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-medium">{option.label}</div>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] uppercase ${option.readiness === "ready" ? "bg-success/15 text-success" : option.readiness === "limited" ? "bg-warning/15 text-warning" : "bg-muted text-muted-foreground"}`}>
+                    {option.readiness}
+                  </span>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{option.description}</p>
+                <div className="mt-3 text-[11px] text-muted-foreground">
+                  <div>Security: {option.security}</div>
+                  <div>Clients: {option.clientSupport.join(" / ")}</div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={() => startRemoteSession(option.mode, "Laptop")}>Laptop</Button>
+                  <Button size="sm" variant="outline" onClick={() => startRemoteSession(option.mode, "Mobile")}>Mobile</Button>
+                </div>
+                {option.pairingCode ? <div className="mt-2 text-[11px] text-warning">Pairing code: {option.pairingCode}</div> : null}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="border-border/50 bg-gradient-to-br from-card to-card/60 backdrop-blur-md">

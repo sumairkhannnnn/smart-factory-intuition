@@ -5,34 +5,46 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SupportHeadsetIcon } from "@/components/ui/support-headset-icon";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { assistantSuggestions, respond, type AssistantMessage } from "@/lib/assistant";
+import { assistantSuggestions } from "@/lib/assistant";
+import { askAssistant, type ChatMessage } from "@/lib/ai-service";
 
 export const Route = createFileRoute("/_app/assistant")({
   component: Assistant,
 });
 
 function Assistant() {
-  const [messages, setMessages] = useState<AssistantMessage[]>([
+  const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
-      text: "Hi! I'm your SmartPredict AI assistant. Ask me about any machine, alert, or maintenance plan.",
+      text: "Hi! I'm your Research & Logic Assistant. I can answer from live factory data and web sources.",
     },
   ]);
   const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  function send() {
-    if (!input.trim()) return;
+  async function send() {
+    if (!input.trim() || isTyping) return;
     const q = input;
     setMessages((m) => [...m, { role: "user", text: q }]);
     setInput("");
-    setTimeout(() => {
-      setMessages((m) => [...m, { role: "assistant", text: respond(q) }]);
-    }, 400);
+    setIsTyping(true);
+    setError(null);
+
+    try {
+      const reply = await askAssistant(q, messages);
+      setMessages((m) => [...m, { role: "assistant", text: reply }]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unexpected error");
+      setMessages((m) => [...m, { role: "assistant", text: "I couldn't process that request. Please try again." }]);
+    } finally {
+      setIsTyping(false);
+    }
   }
 
   return (
@@ -77,6 +89,13 @@ function Assistant() {
                 )}
               </div>
             ))}
+            {isTyping ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+                <span>Thinking…</span>
+              </div>
+            ) : null}
+            {error ? <div className="text-sm text-destructive">{error}</div> : null}
             <div ref={endRef} />
           </div>
           <div className="flex flex-wrap gap-2">

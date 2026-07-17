@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { SupportHeadsetIcon } from "@/components/ui/support-headset-icon";
-import { assistantSuggestions, respond, type AssistantMessage } from "@/lib/assistant";
+import { assistantSuggestions } from "@/lib/assistant";
+import { askAssistant, type ChatMessage } from "@/lib/ai-service";
 
 export const Route = createFileRoute("/_app")({
   ssr: false,
@@ -23,13 +24,13 @@ function AppLayout() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantInput, setAssistantInput] = useState("");
-  const [assistantMessages, setAssistantMessages] = useState<AssistantMessage[]>([
+  const [assistantMessages, setAssistantMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
-      text: "Hi! I’m your AI assistant. Ask me about machine health, alerts, energy use, or maintenance planning.",
+      text: "Hi! I’m your Research & Logic Assistant. I can answer from live factory data and web sources.",
     },
-  ]);
-
+  ]);  const [assistantTyping, setAssistantTyping] = useState(false);
+  const [assistantError, setAssistantError] = useState<string | null>(null);
   const assistantPanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -79,14 +80,23 @@ function AppLayout() {
     hour12: true,
   }).format(currentTime);
 
-  function sendAssistantMessage() {
-    if (!assistantInput.trim()) return;
+  async function sendAssistantMessage() {
+    if (!assistantInput.trim() || assistantTyping) return;
     const q = assistantInput;
     setAssistantMessages((m) => [...m, { role: "user", text: q }]);
     setAssistantInput("");
-    setTimeout(() => {
-      setAssistantMessages((m) => [...m, { role: "assistant", text: respond(q) }]);
-    }, 400);
+    setAssistantTyping(true);
+    setAssistantError(null);
+
+    try {
+      const reply = await askAssistant(q, assistantMessages);
+      setAssistantMessages((m) => [...m, { role: "assistant", text: reply }]);
+    } catch (err) {
+      setAssistantError(err instanceof Error ? err.message : "Unexpected error");
+      setAssistantMessages((m) => [...m, { role: "assistant", text: "I couldn't process that request. Please try again." }]);
+    } finally {
+      setAssistantTyping(false);
+    }
   }
 
   function handleAssistantClick() {
@@ -138,6 +148,13 @@ function AppLayout() {
                     </div>
                   ))}
                 </div>
+                {assistantTyping ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+                    <span>Thinking…</span>
+                  </div>
+                ) : null}
+                {assistantError ? <div className="text-sm text-destructive">{assistantError}</div> : null}
                 <div className="flex flex-wrap gap-2">
                   {assistantSuggestions.map((suggestion) => (
                     <button

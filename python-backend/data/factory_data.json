@@ -1,0 +1,71 @@
+{
+  "summary": {
+    "uptime": 98.7,
+    "output": 12420,
+    "efficiency": 93.5,
+    "activeAlerts": 3
+  },
+  "machines": [
+    {
+      "id": "M-101",
+      "name": "Assembly Line A",
+      "status": "warning",
+      "downtimeMinutes": 18,
+      "temperature": 79
+    },
+    {
+      "id": "M-202",
+      "name": "Packaging Station",
+      "status": "critical",
+      "downtimeMinutes": 42,
+      "temperature": 92
+    },
+    {
+      "id": "M-303",
+      "name": "Robot Cell 3",
+      "status": "healthy",
+      "downtimeMinutes": 0,
+      "temperature": 68
+    }
+  ],
+  "alerts": [
+    {
+      "id": "A-1",
+      "machine": "Packaging Station",
+      "status": "critical",
+      "message": "Motor temperature exceeded safe threshold"
+    },
+    {
+      "id": "A-2",
+      "machine": "Assembly Line A",
+      "status": "warning",
+      "message": "Minor vibration detected"
+    },
+    {
+      "id": "A-3",
+      "machine": "Robot Cell 3",
+      "status": "healthy",
+      "message": "No action required"
+    }
+  ],
+  "maintenance": [
+    {
+      "id": "MT-1",
+      "machine": "Packaging Station",
+      "status": "critical",
+      "task": "Inspect cooling fan and sensor calibration"
+    },
+    {
+      "id": "MT-2",
+      "machine": "Assembly Line A",
+      "status": "warning",
+      "task": "Inspect bearings and lubrication"
+    },
+    {
+      "id": "MT-3",
+      "machine": "Robot Cell 3",
+      "status": "healthy",
+      "task": "Routine diagnostics"
+    }
+  ]
+}
